@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Interest Record</title>
+        <link rel="stylesheet" href="style.css">
+        <script src="https://kit.fontawesome.com/20b7c06391.js" crossorigin="anonymous"></script>
+    </head>
+    <body>
+        <section id="genre-list" class="">
+            <h1>Interest Record</h1>
+            <button id="home-ellipsis"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+            <div class="wrapper">
+                <div id="add-grid" class="genre-grid sweep-hover">
+                    <i class="fa-solid fa-plus"></i>
+                </div>
+            </div>
+        </section>
+
+        <section id="genre-detail" class="hidden">
+            <header class="detail-header">
+                <button id="close-detail-btn"><i class="fa-solid fa-arrow-left"></i></button>
+                <h1 class="genre-title">Sample</h1>
+                <button id="detail-ellipsis"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+            </header>
+            <main class="none-scrollbar">
+                <div class="wrapper none-scrollbar">
+                    <div id="add-subgrid" class="genre-grid sweep-hover">
+                        <i class="fa-solid fa-plus"></i>
+                    </div>
+                </div>
+                <ul class="entry-list none-scrollbar">
+                    <li id="add-item" class="entry-item sweep-hover">
+                        <i class="fa-solid fa-plus"></i>
+                    </li>
+                </ul>   
+            </main>
+            
+            <footer class="detail-footer">
+                <textarea placeholder="Overall Memo" class="overall-memo"></textarea>
+            </footer>
+        </section>
+
+        <div id="control-home-modal" class="hidden">
+            <p id="import-btn" class="control-modal">Import file</p>
+            <p id="export-btn" class="control-modal">Export file</p>
+        </div>
+        <div id="import-file-modal" class="overlay hidden">
+            <div id="import-file-wrapper">
+                <h2>Import File</h2>
+                <form id="import-form">
+                    <input type="file" id="import-file" accept=".json">
+                </form>
+                <div id="import-btn-wrapper">
+                    <button id="import-cancel-btn">Cancel</button>
+                    <button id="import-submit-btn">Import</button>
+                </div>
+            </div>
+        </div>
+        <div id="edit-genre-modal" class="overlay hidden">
+            <div id="edit-genre">
+                <h2 id="edit-genre-type">Create New Genre</h2>
+                <form id="genre-form">
+                    <label for="genre-name">Genre Name</label>
+                    <input type="text" id="genre-name" name="genre-name" required>
+                    <label for="date">Date</label>
+                    <input type="date" id="date" name="date" required>
+                </form>
+                <div id="genre-btn">
+                    <button id="genre-cancel-btn">Cancel</button>
+                    <button id="genre-submit-btn">Create</button>
+                </div>
+            </div>
+        </div>
+        <div id="edit-detail-modal" class="overlay hidden">
+            <div id="edit-detail">
+                <h2 id="edit-detail-type">Create New Detail</h2>
+                <form id="detail-form">
+                    <label for="detail-type">Type</label>
+                    <select id="detail-type">
+                        <option value="link">Website / Link</option>
+                        <option value="youtube">YouTube</option>
+                        <option value="book">Book</option>
+                        <option value="document">Document</option>
+                    </select>
+                    <div data-type="link youtube document">
+                        <label for="detail-source">URL</label>
+                        <input type="url" id="detail-source" name="detail-source">
+                    </div>
+                    <div data-type="book">
+                        <label for="detail-isbn">ISBN</label>
+                        <input type="text" id="detail-isbn">
+                    </div>
+                    <div data-type="link youtube book document">
+                        <label for="detail-title">Title</label>
+                        <input type="text" id="detail-title" name="detail-title" required>
+                        <label for="detail-date">Date</label>
+                        <input type="date" id="detail-date" name="detail-date">
+                        <label for="detail-memo">Memo</label>
+                        <textarea id="detail-memo" name="detail-memo"></textarea>
+                    </div>
+                </form>
+                <div id="detail-btn">
+                    <button id="detail-cancel-btn">Cancel</button>
+                    <button id="detail-submit-btn">Create</button>
+                </div>
+            </div>
+        </div>
+        <div id="control-folder-modal" class="hidden">
+            <p id="edit-folder-btn" class="control-modal">Edit</p>
+            <p id="delete-folder-btn" class="control-modal">Delete</p>
+        </div>
+        <div id="control-detail-modal" class="hidden">
+            <p id="edit-detail-btn" class="control-modal">Edit</p>
+            <p id="delete-detail-btn" class="control-modal">Delete</p>
+        </div>
+        <script src="script.js"></script>
+    </body>
+</html>
