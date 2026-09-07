@@ -359,6 +359,8 @@ document.addEventListener("DOMContentLoaded", () => {
     function deleteFolder() { 
         if (!editingFolderId) return;
 
+        alert("Are you sure you want to delete this folder? All subfolders and details will be deleted.");
+
         const parentId = folderStack[folderStack.length - 1] ?? null;
         const parent = parentId ? findNodeById(root.children, parentId) : root;
         if (!parent) return;
@@ -396,6 +398,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function deleteDetail () {
         if (!editingItemId) return;
+
+        alert("Are you sure you want to delete this item? You cannot restore it.");
 
         const parent = findNodeById(root.children, currentFolderId);
         if (!parent) return;
