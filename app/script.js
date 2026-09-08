@@ -493,26 +493,32 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function getTodayString() {
-    const date = new Date();
-    const y = date.getFullYear();
-    const m = String(date.getMonth()+1).padStart(2, "0");
-    const d = String(date.getDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
+        const date = new Date();
+        const y = date.getFullYear();
+        const m = String(date.getMonth()+1).padStart(2, "0");
+        const d = String(date.getDate()).padStart(2, "0");
+        return `${y}-${m}-${d}`;
     }
 
     function extractYouTubeId (url) {
-    const regex = [
-        /youtu\.be\/([a-zA-Z0-9_-]{11})/,
-        /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,
-        /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/
-    ]
+        const regex = [
+            /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+            /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,
+            /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/
+        ]
 
-    for (const pattern of regex) {
-        const match = url.match(pattern);
-        if (match) return match[1];
+        for (const pattern of regex) {
+            const match = url.match(pattern);
+            if (match) return match[1];
+        }
+
+        return null;
     }
 
-    return null;
-    }
+        
+
+
 
 })
+
+
