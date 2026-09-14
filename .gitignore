@@ -3,3 +3,4 @@ note.md
 server/node_modules/
 test/
 server/study-log.db
+server/test-server.js
