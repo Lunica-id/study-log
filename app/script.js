@@ -437,8 +437,14 @@ document.addEventListener("DOMContentLoaded", () => {
         controlDetailModal.classList.remove("hidden");
     }
 
-    function saveStorage() {
+    async function saveStorage() {
         localStorage.setItem("interestRecord", JSON.stringify(root));
+        console.log("file saved");
+        const response = await fetch("http://localhost:3003/api/folders");
+
+        const folders = await response.json();
+
+        console.log(folders);
     }
 
     function loadStorage() {
@@ -514,11 +520,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         return null;
     }
-
-        
-
-
-
 })
 
 
