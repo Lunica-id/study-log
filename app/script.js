@@ -40,6 +40,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let editingFolderId = null;
     let editingItemId = null;
 
+    let currentParentId = null;
+
     loadStorage();
     document.addEventListener("click", (e) => { 
         if (!controlHomeModal.contains(e.target) && !controlHomeModal.classList.contains("hidden")) {
@@ -274,6 +276,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         editGenreModal.classList.add("hidden");
         saveStorage();
+
+        createFolder(name, date, null);
         document.getElementById("genre-name").value = "";
         document.getElementById("date").value = "";
         renderGenreDetail(currentFolderId);
@@ -444,7 +448,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const folders = await response.json();
 
-        console.log(folders);
+        console.log("saved file: ",folders);
     }
 
     function loadStorage() {
@@ -519,6 +523,31 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         return null;
+    }
+
+
+    async function createFolder(name, date, overallMemo) {
+        const response = await fetch("http://localhost:3003/api/folders", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                parentId: currentFolderId,
+                name: name,
+                date: date,
+                overallMemo: overallMemo
+            })
+        });
+
+        const result = await response.json();
+
+        if(!response.ok) {
+            console.error(result.error);
+            return;
+        }
+
+        console.log("create successfully: ", result);
     }
 })
 

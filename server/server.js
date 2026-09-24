@@ -10,13 +10,13 @@ const db = new Database("study-log.db");
 
 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
 const folderPostSchema = z.object({
-    parent_id: z.number().nullable(),
-    name: z.string().min(1),
+    parentId: z.number().nullable(),
+    name: z.string().trim().min(1),
     date: z.string().regex(datePattern).refine(isValidDate, {
         message: "Invalid date"
-    })
-
-})
+    }),
+    overallMemo: z.string().nullable().optional()
+});
 
 db.pragma("foreign_keys = ON"); //sqlite3パッケージの場合コードが異なる
 
@@ -58,6 +58,14 @@ app.get("/api/folders", (req, res) => {
         .all();
 
     res.json(folders);
+});
+
+app.get("/api/folders/root", (req, res) => {
+    const folders = db
+        .prepare(`SELECT * FROM folders`)
+        .run();
+
+    res.json(folders);
 })
 
 app.post("/api/folders", (req, res) => {
@@ -65,18 +73,33 @@ app.post("/api/folders", (req, res) => {
 
     if (!result.success) {
         return res.status(400).json({
-            message: "Invalid input data"
+            message: "Invalid input data",
+            errors: result.error.issues
         });
     }
 
-    const {parent_id, name, date, overall_memo} = result.data;
+    const {parentId, name, date, overallMemo} = result.data;
+    console.log("result");
+    console.log(result);
 
-    const dbResult = db
-        .prepare(`
+    try {
+        const dbResult = db.prepare (`
             INSERT INTO folders (parent_id, name, date, overall_memo)
-            VALUES()
-            `)
-})
+            VALUES(?,?,?,?)
+        `).run(parentId,name,date,overallMemo);
+
+        res.status(201).json({
+            message: "Folder created",
+            id: Number(dbResult.lastInsertRowid)
+        });
+    } catch (err) {
+        console.error(err);
+
+        res.status(500).json({
+            error: "failed to create folder"
+        });
+    }
+});
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
