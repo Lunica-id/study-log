@@ -42,7 +42,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let currentParentId = null;
 
-    loadStorage();
+    //loadStorage();
+    loadRootFolders();
     document.addEventListener("click", (e) => { 
         if (!controlHomeModal.contains(e.target) && !controlHomeModal.classList.contains("hidden")) {
             controlHomeModal.classList.add("hidden");
@@ -121,118 +122,119 @@ document.addEventListener("DOMContentLoaded", () => {
         return null;
     }
 
-    function renderGenreDetail(folderId) {
+    async function renderOverall(folderId) {
+        const folders = await fetchChildrenFolders(folderId);
+
         if (folderId === null) {
-            renderGenreList(root.children, rootGenreWrapper);
+            renderFolders(folders, rootGenreWrapper);
             genreListSection.classList.remove("hidden");
             detailSection.classList.add("hidden");
             return;
         }
 
-        const folder = folderId === null 
-            ? root
-            : findNodeById(root.children, folderId);
-        if (!folder) return;
-
-        genreTitle.innerText = folder.name;
+        if (folderId !== null) {
+            const currentFolder = await fetchFolder(folderId);
+            genreTitle.innerText = currentFolder.name;
+            overallMemo.value = currentFolder.overallMemo || "";
+        }
 
         entryList.querySelectorAll(".entry-item:not(#add-item)").forEach(e => e.remove());
 
-        renderGenreList(folder.children, subGenreWrapper);
+        renderFolders(folders, subGenreWrapper);
 
-        folder.children.forEach(child => {
-            if (child.type === "folder") return;
-            renderDetailItem(child);
-        })
-        overallMemo.value = folder.overallMemo || "";
+        const items = await fetchChildrenItems(folderId);
+        renderItems(items);
+
         genreListSection.classList.add("hidden");
         detailSection.classList.remove("hidden");
     }
 
-    function renderGenreList(children, wrapper) {
+    function renderFolders(folders, wrapper) {
         wrapper.querySelectorAll(".genre-grid:not(#add-grid, #add-subgrid)").forEach(e => e.remove());
 
-        children.forEach(child => {
-            if (child.type !== "folder") return;
+        folders.forEach(folder => {
+            //if (folder.type !== "folder") return;
 
             const div = document.createElement("div");
             div.className = "genre-grid sweep-hover";
-            div.dataset.nodeId = child.id;
+            div.dataset.nodeId = folder.id;
 
             div.innerHTML = `
-                <h3>${child.name}<h3>
-                <p>${child.date}</p>
+                <h3>${folder.name}<h3>
+                <p>${folder.date}</p>
             `;
 
             div.addEventListener("click", () => {
                 folderStack.push(currentFolderId);
-                currentFolderId = child.id;
-                renderGenreDetail(child.id);
+                currentFolderId = folder.id;
+                renderOverall(folder.id);
             });
 
             wrapper.appendChild(div);
         })
     }
 
-    function renderDetailItem(detail) {
-        const li = document.createElement("li");
-        li.className = "entry-item";
-        li.dataset.detailId = detail.id;
+    function renderItems(items) {
+        items.forEach(item => {
+            const li = document.createElement("li");
+            li.className = "entry-item";
+            li.dataset.detailId = item.id;
 
-        if(detail.type === "youtube") {
-            li.innerHTML = `
-                <iframe 
-                    class="entry-thumbnail" 
-                    width="367" 
-                    height="207" 
-                    src="https://www.youtube.com/embed/${detail.source}" 
-                    title="YouTube video player" 
-                    frameborder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowfullscreen
-                ></iframe>
-                <div class="entry-info">
-                    <a
-                        href="https://www.youtube.com/watch?v=${detail.source}"
-                        target="_blank"
-                        class="entry-title"
-                    >${detail.title}</a>
-                </div>
-                <p class="entry-date">${detail.date}</p>
-                <p class="entry-memo">Memo</p>
-                <div class="entry-ellipsis"><i class="fa-solid fa-ellipsis-vertical"></i></div>
-            `;
-        } else if (detail.type === "link") {
-            li.innerHTML = `
-                <div class="favicon">
-                    <img src="https://www.google.com/s2/favicons?domain=${detail.source}">
-                </div>
-                <div class="entry-info">
-                    <a 
-                        href="${detail.source}" 
-                        target="_blank" 
-                        class="entry-title"
-                    >${detail.title}</a>
-                </div>
-                <p class="entry-date">${detail.date}</p>
-                <p class="entry-memo">Memo</p>
-                <div class="entry-ellipsis"><i class="fa-solid fa-ellipsis-vertical"></i></div>
-            `;
-        } else if (detail.type === "book") {
-            li.innerHTML = `
-                <div class="book-icon">
-                    <i class="fa-solid fa-book"></i>
-                </div>
-                <div class="entry-info">
-                    <p class="entry-title">${detail.title}</p>
-                </div>
-                <p class="entry-date">${detail.date}</p>
-                <p class="entry-memo">Memo</p>
-                <div class="entry-ellipsis"><i class="fa-solid fa-ellipsis-vertical"></i></div>
-            `;
-        }
+            if(item.type === "youtube") {
+                li.innerHTML = `
+                    <iframe 
+                        class="entry-thumbnail" 
+                        width="367" 
+                        height="207" 
+                        src="https://www.youtube.com/embed/${item.source}" 
+                        title="YouTube video player" 
+                        frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowfullscreen
+                    ></iframe>
+                    <div class="entry-info">
+                        <a
+                            href="https://www.youtube.com/watch?v=${item.source}"
+                            target="_blank"
+                            class="entry-title"
+                        >${item.title}</a>
+                    </div>
+                    <p class="entry-date">${item.date}</p>
+                    <p class="entry-memo">Memo</p>
+                    <div class="entry-ellipsis"><i class="fa-solid fa-ellipsis-vertical"></i></div>
+                `;
+            } else if (item.type === "link") {
+                li.innerHTML = `
+                    <div class="favicon">
+                        <img src="https://www.google.com/s2/favicons?domain=${item.source}">
+                    </div>
+                    <div class="entry-info">
+                        <a 
+                            href="${item.source}" 
+                            target="_blank" 
+                            class="entry-title"
+                        >${item.title}</a>
+                    </div>
+                    <p class="entry-date">${item.date}</p>
+                    <p class="entry-memo">Memo</p>
+                    <div class="entry-ellipsis"><i class="fa-solid fa-ellipsis-vertical"></i></div>
+                `;
+            } else if (item.type === "book") {
+                li.innerHTML = `
+                    <div class="book-icon">
+                        <i class="fa-solid fa-book"></i>
+                    </div>
+                    <div class="entry-info">
+                        <p class="entry-title">${item.title}</p>
+                    </div>
+                    <p class="entry-date">${item.date}</p>
+                    <p class="entry-memo">Memo</p>
+                    <div class="entry-ellipsis"><i class="fa-solid fa-ellipsis-vertical"></i></div>
+                `;
+            }
 
-        entryList.appendChild(li);
+            entryList.appendChild(li);
+        })
     }
 
     function handleParentSubmit(e) {
@@ -280,7 +282,7 @@ document.addEventListener("DOMContentLoaded", () => {
         createFolder(name, date, null);
         document.getElementById("genre-name").value = "";
         document.getElementById("date").value = "";
-        renderGenreDetail(currentFolderId);
+        renderOverall(currentFolderId);
     }
 
     function handleDetailSubmit(e) {
@@ -326,7 +328,7 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("detail-title").value = "";
         document.getElementById("detail-date").value = "";
         document.getElementById("detail-memo").value = "";
-        renderGenreDetail(currentFolderId);
+        renderOverall(currentFolderId);
     }
 
     function updateDetailForm() {
@@ -341,7 +343,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function goBack() {
         currentFolderId = folderStack.pop() ?? null;
-        renderGenreDetail(currentFolderId);
+        renderOverall(currentFolderId);
     }
 
     function openEditFolderModal () {
@@ -373,7 +375,7 @@ document.addEventListener("DOMContentLoaded", () => {
         editingFolderId = null;
         saveStorage();
         goBack();
-        renderGenreDetail(currentFolderId);
+        renderOverall(currentFolderId);
         controlFolderModal.classList.add("hidden");
     }
 
@@ -412,7 +414,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         editingItemId = null;
         saveStorage();
-        renderGenreDetail(currentFolderId);
+        renderOverall(currentFolderId);
         controlDetailModal.classList.add("hidden");
     }
 
@@ -455,7 +457,44 @@ document.addEventListener("DOMContentLoaded", () => {
         const saved = localStorage.getItem("interestRecord");
         if (!saved) return;
         root = JSON.parse(saved); 
-        renderGenreDetail(null);
+        renderOverall(null);
+    }
+
+    async function loadRootFolders() {
+        const folders = await fetchChildrenFolders(null);
+        renderFolders(folders, rootGenreWrapper);
+    }
+
+    async function fetchChildrenFolders(parentId) {
+        const url = parentId === null 
+            ? "http://localhost:3003/api/folders/root"
+            : `http://localhost:3003/api/folders/${parentId}/children`
+        const response = await fetch(url);
+        if (!response.ok) {
+            console.error("Failed to fetch folders");
+            return [];
+        }
+
+        return await response.json();
+    }
+
+    async function fetchFolder(id) {
+        const response = await fetch(`http://localhost:3003/api/folders/${id}`);
+        if (!response) {
+            console.error("Failed to fetch folder");
+            return [];
+        }
+        return await response.json();
+    }
+
+    async function fetchChildrenItems(folderId) {
+        const response = await fetch(`http://localhost:3003/api/items/${folderId}/children`);
+        if (!response.ok) {
+            console.error("Failed to fetch items");
+            return [];
+        }
+
+        return await response.json();
     }
 
     function importData() {
@@ -472,7 +511,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const parsed = JSON.parse(reader.result);
                 root = parsed;
                 saveStorage();
-                renderGenreDetail(null);
+                renderOverall(null);
                 importFileModal.classList.add("hidden");
             } catch {
                 alert("Invalid file");

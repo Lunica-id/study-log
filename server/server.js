@@ -62,10 +62,64 @@ app.get("/api/folders", (req, res) => {
 
 app.get("/api/folders/root", (req, res) => {
     const folders = db
-        .prepare(`SELECT * FROM folders`)
-        .run();
+        .prepare(`SELECT * FROM folders WHERE parent_id IS NULL`)
+        .all();
 
     res.json(folders);
+})
+
+app.get("/api/folders/:id", (req, res) => {
+    const folderId = Number(req.params.id);
+
+    const folder = db
+        .prepare(`
+            SELECT * FROM folders
+            WHERE id = ?
+        `).get(folderId);
+    
+    if (!folder) {
+        return res.status(404).json({
+            error: "Folder not found"
+        });
+    }
+
+    res.json(folder);
+})
+
+app.get("/api/folders/:id/children", (req, res) => {
+    const folderId = Number(req.params.id);
+
+    const folders = db
+        .prepare(`
+            SELECT * FROM folders
+            WHERE parent_id = ?
+        `).all(folderId);
+
+    res.json(folders);
+})
+
+app.get("/api/items/:id", (req, res) => {
+    const itemId = Number(req.params.id);
+
+    const item = db
+        .prepare(`
+            SELECT * FROM items
+            WHERE id = ?
+        `).get(itemId);
+
+    res.json(item);
+})
+
+app.get("/api/items/:id/children", (req, res) => {
+    const folderId = Number(req.params.id);
+
+    const items = db
+        .prepare(`
+            SELECT * FROM items
+            WHERE folder_id = ?
+        `).all(folderId);
+
+    res.json(items);
 })
 
 app.post("/api/folders", (req, res) => {
@@ -100,6 +154,7 @@ app.post("/api/folders", (req, res) => {
         });
     }
 });
+
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
