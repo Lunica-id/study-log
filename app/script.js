@@ -98,6 +98,7 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("detail-memo").value = "";
         editingItemId = null;
     });
+    console.log("registering handleDetailSubmit");
     detailSubmitBtn.addEventListener("click", handleDetailSubmit);
     importBtn.addEventListener("click", () => {
         controlHomeModal.classList.add("hidden");
@@ -254,8 +255,6 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Please fill in genre name");
             return;
         }
-
-        // let parentChildren;
         // if (currentFolderId === null) {
         //     parentChildren = root.children;
         // } else {
@@ -305,50 +304,43 @@ document.addEventListener("DOMContentLoaded", () => {
         console.log("after render:", currentFolderId);
     }
 
-    function handleDetailSubmit(e) {
+    async function handleDetailSubmit(e) {
         e.preventDefault();
+        console.log("handleDetailSubmit fired");
+
         const type = document.getElementById("detail-type").value;
         const source = document.getElementById("detail-source").value;
-        const isbn = document.getElementById("detail-isbn").value || "-";
+        const isbn = document.getElementById("detail-isbn").value || null;
         const title = document.getElementById("detail-title").value;
         const date = document.getElementById("detail-date").value || getTodayString();
-        const memo = document.getElementById("detail-memo").value;
+        const memo = document.getElementById("detail-memo").value || null;
 
-        const parent = findNodeById(root.children, currentFolderId);
-        if (!parent) return;
+        const item = {
+            type: type,
+            source: extractYouTubeId(source) ?? source,
+            isbn: isbn,
+            title: title,
+            date: date,
+            memo: memo
+        };
 
         if (editingItemId !== null) {
-            const item = parent.children.find(c => c.id === editingItemId);
-            if (!item) return;
-
-            item.type = type;
-            item.source = extractYouTubeId(source) ?? source;
-            item.isbn = isbn;
-            item.title = title;
-            item.date = date;
-            item.memo = memo;
-
-            editingItemId = null;
-        } else {
-            parent.children.push({
-                id: Date.now(),
-                type: type,
-                source: extractYouTubeId(source) ?? source,
-                isbn,
-                title,
-                date,
-                memo
-            });
+            // 今はまだ編集処理は作らない
+            return;
         }
 
-        saveStorage();
+        await createNewItem(item);
+
         editDetailModal.classList.add("hidden");
+
         document.getElementById("detail-type").value = "link";
         document.getElementById("detail-source").value = "";
+        document.getElementById("detail-isbn").value = "";
         document.getElementById("detail-title").value = "";
         document.getElementById("detail-date").value = "";
         document.getElementById("detail-memo").value = "";
-        renderOverall(currentFolderId);
+
+        await renderOverall(currentFolderId);
     }
 
     function updateDetailForm() {
@@ -662,7 +654,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 date: item.date,
                 memo: item.memo
             })
-        })
+        });
+        const result = await response.json();
+
+        if (!response.ok) {
+            console.error(result.error);
+            return;
+        }
+
+        console.log("create item successfully: ", result);
     }
 })
 
@@ -690,3 +690,7 @@ document.addEventListener("DOMContentLoaded", () => {
         //         memo
         //     });
         // }
+
+
+
+        

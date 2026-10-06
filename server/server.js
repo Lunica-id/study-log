@@ -17,6 +17,17 @@ const folderPostSchema = z.object({
     }),
     overallMemo: z.string().nullable().optional()
 });
+const itemPostSchema = z.object({
+    folderId: z.number(),
+    type: z.enum(["link","youtube","book","document"]),
+    source: z.string().nullable().optional(),
+    isbn: z.string().nullable().optional(),
+    title: z.string().trim().min(1),
+    date: z.string().regex(datePattern).refine(isValidDate, {
+        message:"Invalid date"
+    }),
+    memo: z.string().nullable().optional()
+});
 
 db.pragma("foreign_keys = ON"); //sqlite3パッケージの場合コードが異なる
 
@@ -151,6 +162,62 @@ app.post("/api/folders", (req, res) => {
 
         res.status(500).json({
             error: "failed to create folder"
+        });
+    }
+});
+
+app.post("/api/items", (req, res) => {
+    const result = itemPostSchema.safeParse(req.body);
+
+    if (!result.success) {
+        return res.status(400).json({
+            message: "Invalid input data",
+            errors: result.error.issues
+        });
+    }
+
+    const {
+        folderId,
+        type,
+        source,
+        isbn,
+        title,
+        date,
+        memo
+    } = result.data;
+
+    try {
+        const dbResult = db.prepare(`
+            INSERT INTO items (
+                folder_id,
+                type,
+                source,
+                isbn,
+                title,
+                date,
+                memo
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `).run(
+            folderId,
+            type,
+            source ?? null,
+            isbn ?? null,
+            title,
+            date,
+            memo ?? null
+        );
+
+        res.status(201).json({
+            message: "Item created",
+            id: Number(dbResult.lastInsertRowid)
+        });
+
+    } catch (err) {
+        console.error(err);
+
+        res.status(500).json({
+            error: "Failed to create item"
         });
     }
 });
