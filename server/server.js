@@ -170,3 +170,28 @@ function isValidDate(dateString) {
 
     return (date.getFullYear() === year && date.getMonth() === month-1 && date.getDate() === day);
 }
+
+
+    // async function createFolder(name, date, overallMemo) {
+    //     const response = await fetch("http://localhost:3003/api/folders", {
+    //         method: "POST",
+    //         headers: {
+    //             "Content-Type": "application/json"
+    //         },
+    //         body: JSON.stringify({
+    //             parentId: currentFolderId,
+    //             name: name,
+    //             date: date,
+    //             overallMemo: overallMemo
+    //         })
+    //     });
+
+    //     const result = await response.json();
+
+    //     if(!response.ok) {
+    //         console.error(result.error);
+    //         return;
+    //     }
+
+    //     console.log("create successfully: ", result);
+    // }

@@ -123,6 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function renderOverall(folderId) {
+        console.log("renderOverall:", folderId);
         const folders = await fetchChildrenFolders(folderId);
 
         if (folderId === null) {
@@ -145,6 +146,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const items = await fetchChildrenItems(folderId);
         renderItems(items);
 
+        currentFolderId = folderId;
+        console.log("currentFolderId:"+currentFolderId);
         genreListSection.classList.add("hidden");
         detailSection.classList.remove("hidden");
     }
@@ -237,8 +240,12 @@ document.addEventListener("DOMContentLoaded", () => {
         })
     }
 
-    function handleParentSubmit(e) {
+    async function handleParentSubmit(e) {
         e.preventDefault();
+
+        console.log("handleParentSubmit start");
+        console.log("currentFolderId:", currentFolderId);
+        console.log("editingFolderId:", editingFolderId);
 
         const name = document.getElementById("genre-name").value.trim();
         const date = document.getElementById("date").value || getTodayString();
@@ -248,41 +255,54 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        let parentChildren;
+        // let parentChildren;
+        // if (currentFolderId === null) {
+        //     parentChildren = root.children;
+        // } else {
+        //     const parent = findNodeById(root.children, currentFolderId);
+        //     if (!parent) return;
+        //     parentChildren = parent.children;
+        // }
+        // if (editingFolderId !== null) {
+        //     const folder = findNodeById(root.children, editingFolderId);
+        //     if (!folder || folder.type !== "folder") return;
+        //     folder.name = name;
+        //     folder.date = date;
+        //     editingFolderId = null;
+        // } else {
+        //     parentChildren.push({
+        //         id: Date.now(),
+        //         type: "folder",
+        //         name,
+        //         date,
+        //         overallMemo: "",
+        //         children: []
+        //     });
+        // }
+        // editGenreModal.classList.add("hidden");
+        // saveStorage();
 
-        if (currentFolderId === null) {
-            parentChildren = root.children;
-        } else {
-            const parent = findNodeById(root.children, currentFolderId);
-            if (!parent) return;
-            parentChildren = parent.children;
-        }
-
+        const folder = {
+                name: name,
+                date: date,
+                overallMemo: null
+            };
+        
         if (editingFolderId !== null) {
-            const folder = findNodeById(root.children, editingFolderId);
-            if (!folder || folder.type !== "folder") return;
-
-            folder.name = name;
-            folder.date = date;
-            editingFolderId = null;
+            updateFolder(folder); //editingFolderIdをnullにすること
         } else {
-            parentChildren.push({
-                id: Date.now(),
-                type: "folder",
-                name,
-                date,
-                overallMemo: "",
-                children: []
-            });
+            await createNewFolder(folder);
         }
-
+        
         editGenreModal.classList.add("hidden");
-        saveStorage();
-
-        createFolder(name, date, null);
         document.getElementById("genre-name").value = "";
         document.getElementById("date").value = "";
-        renderOverall(currentFolderId);
+        
+        console.log("currentFolderId before render:", currentFolderId);
+
+        await renderOverall(currentFolderId);
+
+        console.log("after render:", currentFolderId);
     }
 
     function handleDetailSubmit(e) {
@@ -453,12 +473,12 @@ document.addEventListener("DOMContentLoaded", () => {
         console.log("saved file: ",folders);
     }
 
-    function loadStorage() {
-        const saved = localStorage.getItem("interestRecord");
-        if (!saved) return;
-        root = JSON.parse(saved); 
-        renderOverall(null);
-    }
+    // function loadStorage() {
+    //     const saved = localStorage.getItem("interestRecord");
+    //     if (!saved) return;
+    //     root = JSON.parse(saved); 
+    //     renderOverall(null);
+    // }
 
     async function loadRootFolders() {
         const folders = await fetchChildrenFolders(null);
@@ -565,7 +585,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 
-    async function createFolder(name, date, overallMemo) {
+    async function createNewFolder(folder) {
         const response = await fetch("http://localhost:3003/api/folders", {
             method: "POST",
             headers: {
@@ -573,9 +593,9 @@ document.addEventListener("DOMContentLoaded", () => {
             },
             body: JSON.stringify({
                 parentId: currentFolderId,
-                name: name,
-                date: date,
-                overallMemo: overallMemo
+                name: folder.name,
+                date: folder.date,
+                overallMemo: folder.overallMemo
             })
         });
 
@@ -588,6 +608,47 @@ document.addEventListener("DOMContentLoaded", () => {
 
         console.log("create successfully: ", result);
     }
+
+    async function createNewItem(item) {
+        const response = await fetch ("http://localhost:3003/api/items", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                folderId: currentFolderId,
+                type: item.type,
+                source: item.source,
+                isbn: item.isbn,
+                title: item.title,
+                date: item.date,
+                memo: item.memo
+            })
+        })
+    }
 })
 
 
+        // if (editingItemId !== null) {
+        //     const item = parent.children.find(c => c.id === editingItemId);
+        //     if (!item) return;
+
+        //     item.type = type;
+        //     item.source = extractYouTubeId(source) ?? source;
+        //     item.isbn = isbn;
+        //     item.title = title;
+        //     item.date = date;
+        //     item.memo = memo;
+
+        //     editingItemId = null;
+        // } else {
+        //     parent.children.push({
+        //         id: Date.now(),
+        //         type: type,
+        //         source: extractYouTubeId(source) ?? source,
+        //         isbn,
+        //         title,
+        //         date,
+        //         memo
+        //     });
+        // }
