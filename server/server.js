@@ -155,6 +155,60 @@ app.post("/api/folders", (req, res) => {
     }
 });
 
+app.patch("/api/folders/:id", (req, res) => {
+    const folderId = Number(req.params.id);
+
+    const {name, date, overallMemo} = req.body;
+
+    try {
+        const result = db.prepare(`
+            UPDATE folders
+            SET name = ?, date = ?, overall_memo = ?
+            WHERE id = ?
+        `).run(name, date, overallMemo, folderId);
+
+        if (result.changes === 0) {
+            return res.status(404).json({
+                error: "Folder not found"
+            });
+        }
+
+        res.json({
+            message: "Folder updated"
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({
+            error: "Failed to update folder"
+        });
+    }
+});
+
+app.delete("/api/folders/:id", (req, res) => {
+    const folderId = Number(req.params.id);
+
+    try {
+        const result = db.prepare(`
+            DELETE FROM folders
+            WHERE id = ?
+        `).run(folderId);
+
+        if (result.changes === 0) {
+            return res.status(404).json({
+                error: "Folder not found"
+            });
+        }
+
+        res.json({
+            message: "Folder deleted"
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({
+            error: "Failed to delete folder"
+        });
+    }
+});
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
@@ -170,28 +224,3 @@ function isValidDate(dateString) {
 
     return (date.getFullYear() === year && date.getMonth() === month-1 && date.getDate() === day);
 }
-
-
-    // async function createFolder(name, date, overallMemo) {
-    //     const response = await fetch("http://localhost:3003/api/folders", {
-    //         method: "POST",
-    //         headers: {
-    //             "Content-Type": "application/json"
-    //         },
-    //         body: JSON.stringify({
-    //             parentId: currentFolderId,
-    //             name: name,
-    //             date: date,
-    //             overallMemo: overallMemo
-    //         })
-    //     });
-
-    //     const result = await response.json();
-
-    //     if(!response.ok) {
-    //         console.error(result.error);
-    //         return;
-    //     }
-
-    //     console.log("create successfully: ", result);
-    // }

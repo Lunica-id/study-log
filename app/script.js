@@ -289,7 +289,7 @@ document.addEventListener("DOMContentLoaded", () => {
             };
         
         if (editingFolderId !== null) {
-            updateFolder(folder); //editingFolderIdをnullにすること
+            await updateFolder(folder); 
         } else {
             await createNewFolder(folder);
         }
@@ -366,11 +366,12 @@ document.addEventListener("DOMContentLoaded", () => {
         renderOverall(currentFolderId);
     }
 
-    function openEditFolderModal () {
-        if (!editingFolderId) return;
+    async function openEditFolderModal() {
+        if (editingFolderId === null) return;
 
-        const folder = findNodeById(root.children, editingFolderId);
-        if (!folder || folder.type !== "folder") return;
+        const folder = await fetchFolder(editingFolderId);
+
+        if (!folder) return;
 
         editGenreType.innerText = "Edit Folder";
         genreSubmitBtn.innerText = "Edit";
@@ -382,21 +383,58 @@ document.addEventListener("DOMContentLoaded", () => {
         controlFolderModal.classList.add("hidden");
     }
 
-    function deleteFolder() { 
-        if (!editingFolderId) return;
+    async function updateFolder(folder) {
+        const response = await fetch(`http://localhost:3003/api/folders/${editingFolderId}`,
+            {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    name: folder.name,
+                    date: folder.date,
+                    overallMemo: folder.overallMemo
+                })
+            }
+        );
 
-        alert("Are you sure you want to delete this folder? All subfolders and details will be deleted.");
+        const result = await response.json();
+        
+        if (!response.ok) {
+            console.error(result.error);
+            return;
+        }
 
-        const parentId = folderStack[folderStack.length - 1] ?? null;
-        const parent = parentId ? findNodeById(root.children, parentId) : root;
-        if (!parent) return;
-
-        parent.children = parent.children.filter(f => f.id !== editingFolderId);
+        console.log("update successfully: ", result);
         editingFolderId = null;
-        saveStorage();
-        goBack();
-        renderOverall(currentFolderId);
+    }
+
+    async function deleteFolder() {
+        if (editingFolderId === null) return;
+
+        const confirmed = confirm(
+            "Are you sure you want to delete this folder? All subfolders and details will be deleted."
+        );
+        if (!confirmed) return;
+
+        const response = await fetch(`http://localhost:3003/api/folders/${editingFolderId}`,
+            {
+                method: "DELETE"
+            }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            console.error(result.error);
+            return;
+        }
+
+        console.log("delete successfully:", result);
+
+        editingFolderId = null;
         controlFolderModal.classList.add("hidden");
+        goBack();
     }
 
     function openEditDetailModal () {
