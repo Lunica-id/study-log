@@ -28,6 +28,16 @@ const itemPostSchema = z.object({
     }),
     memo: z.string().nullable().optional()
 });
+const itemPatchSchema = z.object({
+    type: z.enum(["link", "youtube", "book", "document"]),
+    source: z.string().nullable().optional(),
+    isbn: z.string().nullable().optional(),
+    title: z.string().trim().min(1),
+    date: z.string().regex(datePattern).refine(isValidDate, {
+        message: "Invalid date"
+    }),
+    memo: z.string().nullable().optional()
+});
 
 db.pragma("foreign_keys = ON"); //sqlite3パッケージの場合コードが異なる
 
@@ -251,6 +261,67 @@ app.patch("/api/folders/:id", (req, res) => {
     }
 });
 
+app.patch("/api/items/:id", (req, res) => {
+    const itemId = Number(req.params.id);
+
+    const result = itemPatchSchema.safeParse(req.body);
+
+    if (!result.success) {
+        return res.status(400).json({
+            message: "Invalid input data",
+            errors: result.error.issues
+        });
+    }
+
+    const {
+        type,
+        source,
+        isbn,
+        title,
+        date,
+        memo
+    } = result.data;
+
+    try {
+        const dbResult = db.prepare(`
+            UPDATE items
+            SET
+                type = ?,
+                source = ?,
+                isbn = ?,
+                title = ?,
+                date = ?,
+                memo = ?
+            WHERE id = ?
+        `).run(
+            type,
+            source ?? null,
+            isbn ?? null,
+            title,
+            date,
+            memo ?? null,
+            itemId
+        );
+
+        if (dbResult.changes === 0) {
+            return res.status(404).json({
+                error: "Item not found"
+            });
+        }
+
+        res.json({
+            message: "Item updated"
+        });
+
+    } catch (err) {
+        console.error(err);
+
+        res.status(500).json({
+            error: "Failed to update item"
+        });
+    }
+});
+
 app.delete("/api/folders/:id", (req, res) => {
     const folderId = Number(req.params.id);
 
@@ -273,6 +344,34 @@ app.delete("/api/folders/:id", (req, res) => {
         console.error(err);
         res.status(500).json({
             error: "Failed to delete folder"
+        });
+    }
+});
+
+app.delete("/api/items/:id", (req, res) => {
+    const itemId = Number(req.params.id);
+
+    try {
+        const result = db.prepare(`
+            DELETE FROM items
+            WHERE id = ?
+        `).run(itemId);
+
+        if (result.changes === 0) {
+            return res.status(404).json({
+                error: "Item not found"
+            });
+        }
+
+        res.json({
+            message: "Item deleted"
+        });
+
+    } catch (err) {
+        console.error(err);
+
+        res.status(500).json({
+            error: "Failed to delete item"
         });
     }
 });

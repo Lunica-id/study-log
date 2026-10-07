@@ -325,11 +325,11 @@ document.addEventListener("DOMContentLoaded", () => {
         };
 
         if (editingItemId !== null) {
-            // 今はまだ編集処理は作らない
-            return;
+            await updateItem(item);
+            editingItemId = null;
+        } else {
+            await createNewItem(item);
         }
-
-        await createNewItem(item);
 
         editDetailModal.classList.add("hidden");
 
@@ -429,43 +429,70 @@ document.addEventListener("DOMContentLoaded", () => {
         goBack();
     }
 
-    function openEditDetailModal () {
-        if (!editingItemId) return;
+    async function openEditDetailModal() {
+        if (editingItemId === null) return;
 
-        const parent = findNodeById(root.children, currentFolderId);
-        if (!parent) return;
+        const response = await fetch(
+            `http://localhost:3003/api/items/${editingItemId}`
+        );
 
-        const item = parent.children.find(d => d.id === editingItemId);
-        if (!item)  return;
+        if (!response.ok) {
+            console.error("Failed to fetch item");
+            return;
+        }
+
+        const item = await response.json();
 
         editDetailType.innerText = "Edit Detail";
         detailSubmitBtn.innerText = "Edit";
+
         document.getElementById("detail-type").value = item.type;
-        document.getElementById("detail-source").value = item.type ==="youtube" ? `https://www.youtube.com/watch?v=${item.source}` : item.source;
-        document.getElementById("detail-isbn").value = item.isbn;
+
+        document.getElementById("detail-source").value =
+            item.type === "youtube"
+                ? `https://www.youtube.com/watch?v=${item.source}`
+                : item.source ?? "";
+
+        document.getElementById("detail-isbn").value = item.isbn ?? "";
         document.getElementById("detail-title").value = item.title;
         document.getElementById("detail-date").value = item.date;
-        document.getElementById("detail-memo").value = item.memo;
+        document.getElementById("detail-memo").value = item.memo ?? "";
+
         updateDetailForm();
 
         editDetailModal.classList.remove("hidden");
         controlDetailModal.classList.add("hidden");
     }
 
-    function deleteDetail () {
-        if (!editingItemId) return;
+    async function deleteDetail() {
+        if (editingItemId === null) return;
 
-        alert("Are you sure you want to delete this item? You cannot restore it.");
+        const confirmed = confirm(
+            "Are you sure you want to delete this item? You cannot restore it."
+        );
 
-        const parent = findNodeById(root.children, currentFolderId);
-        if (!parent) return;
+        if (!confirmed) return;
 
-        parent.children = parent.children.filter(d => d.id !== editingItemId);
+        const response = await fetch(
+            `http://localhost:3003/api/items/${editingItemId}`,
+            {
+                method: "DELETE"
+            }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            console.error(result.error);
+            return;
+        }
+
+        console.log("delete item successfully:", result);
 
         editingItemId = null;
-        saveStorage();
-        renderOverall(currentFolderId);
         controlDetailModal.classList.add("hidden");
+    
+        await renderOverall(currentFolderId);
     }
 
     function openControlFolderModal() {
@@ -664,32 +691,36 @@ document.addEventListener("DOMContentLoaded", () => {
 
         console.log("create item successfully: ", result);
     }
+
+    async function updateItem(item) {
+        const response = await fetch(
+            `http://localhost:3003/api/items/${editingItemId}`,
+            {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    type: item.type,
+                    source: item.source,
+                    isbn: item.isbn,
+                    title: item.title,
+                    date: item.date,
+                    memo: item.memo
+                })
+            }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            console.error(result.error);
+            return;
+        }
+
+        console.log("update item successfully:", result);
+    }
 })
-
-
-        // if (editingItemId !== null) {
-        //     const item = parent.children.find(c => c.id === editingItemId);
-        //     if (!item) return;
-
-        //     item.type = type;
-        //     item.source = extractYouTubeId(source) ?? source;
-        //     item.isbn = isbn;
-        //     item.title = title;
-        //     item.date = date;
-        //     item.memo = memo;
-
-        //     editingItemId = null;
-        // } else {
-        //     parent.children.push({
-        //         id: Date.now(),
-        //         type: type,
-        //         source: extractYouTubeId(source) ?? source,
-        //         isbn,
-        //         title,
-        //         date,
-        //         memo
-        //     });
-        // }
 
 
 
