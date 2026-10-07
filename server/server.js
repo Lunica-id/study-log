@@ -17,6 +17,13 @@ const folderPostSchema = z.object({
     }),
     overallMemo: z.string().nullable().optional()
 });
+const folderPatchSchema = z.object({
+    name: z.string().trim().min(1),
+    date: z.string().regex(datePattern).refine(isValidDate, {
+        message: "Invalid date"
+    }),
+    overallMemo: z.string().nullable().optional()
+});
 const itemPostSchema = z.object({
     folderId: z.number(),
     type: z.enum(["link","youtube","book","document"]),
@@ -235,7 +242,16 @@ app.post("/api/items", (req, res) => {
 app.patch("/api/folders/:id", (req, res) => {
     const folderId = Number(req.params.id);
 
-    const {name, date, overallMemo} = req.body;
+    const result = folderPatchSchema.safeParse(req.body);
+
+    if (!result.success) {
+        return res.status(400).json({
+            message: "Invalid input data",
+            errors: result.error.issues
+        });
+    }
+
+    const {name, date, overallMemo} = result.data;
 
     try {
         const result = db.prepare(`
