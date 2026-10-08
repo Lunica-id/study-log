@@ -18,10 +18,10 @@ const folderPostSchema = z.object({
     overallMemo: z.string().nullable().optional()
 });
 const folderPatchSchema = z.object({
-    name: z.string().trim().min(1),
+    name: z.string().trim().min(1).optional(),
     date: z.string().regex(datePattern).refine(isValidDate, {
         message: "Invalid date"
-    }),
+    }).optional(),
     overallMemo: z.string().nullable().optional()
 });
 const itemPostSchema = z.object({
@@ -251,16 +251,40 @@ app.patch("/api/folders/:id", (req, res) => {
         });
     }
 
-    const {name, date, overallMemo} = result.data;
+    const { name, date, overallMemo } = result.data;
+
+    const updates = [];
+    const values = [];
+
+    if (name !== undefined) {
+        updates.push("name = ?");
+        values.push(name);
+    }
+
+    if (date !== undefined) {
+        updates.push("date = ?");
+        values.push(date);
+    }
+
+    if (overallMemo !== undefined) {
+        updates.push("overall_memo = ?");
+        values.push(overallMemo);
+    }
+
+    if (updates.length === 0) {
+        return res.status(400).json({
+            error: "No fields to update"
+        });
+    }
 
     try {
-        const result = db.prepare(`
+        const dbResult = db.prepare(`
             UPDATE folders
-            SET name = ?, date = ?, overall_memo = ?
+            SET ${updates.join(", ")}
             WHERE id = ?
-        `).run(name, date, overallMemo, folderId);
+        `).run(...values, folderId);
 
-        if (result.changes === 0) {
+        if (dbResult.changes === 0) {
             return res.status(404).json({
                 error: "Folder not found"
             });
@@ -269,8 +293,10 @@ app.patch("/api/folders/:id", (req, res) => {
         res.json({
             message: "Folder updated"
         });
+
     } catch (err) {
         console.error(err);
+
         res.status(500).json({
             error: "Failed to update folder"
         });

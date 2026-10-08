@@ -1,4 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
+    console.log("script.js loaded");
     const genreListSection = document.getElementById("genre-list");
     const homeEllipsis = document.getElementById("home-ellipsis");
     const rootGenreWrapper = genreListSection.querySelector("#genre-list .wrapper");
@@ -41,6 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let editingItemId = null;
 
     let currentParentId = null;
+    let memoSaveTimer = null;
 
     //loadStorage();
     loadRootFolders();
@@ -66,11 +68,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     genreSubmitBtn.addEventListener("click", handleParentSubmit);
     typeSelect.addEventListener("change", updateDetailForm);
-    overallMemo.addEventListener("input", (e) => {
-        const folder = findNodeById(root.children, currentFolderId);
-        if (!folder) return;
-        folder.overallMemo = e.target.value;
-        saveStorage();
+    overallMemo.addEventListener("input", () => {
+        clearTimeout(memoSaveTimer);
+
+        memoSaveTimer = setTimeout(() => {
+            saveOverallMemo();
+        }, 500);
     });
     closeDetailBtn.addEventListener("click", goBack);
     addItemBtn.addEventListener("click", () => {
@@ -98,7 +101,6 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("detail-memo").value = "";
         editingItemId = null;
     });
-    console.log("registering handleDetailSubmit");
     detailSubmitBtn.addEventListener("click", handleDetailSubmit);
     importBtn.addEventListener("click", () => {
         controlHomeModal.classList.add("hidden");
@@ -111,17 +113,6 @@ document.addEventListener("DOMContentLoaded", () => {
     exportBtn.addEventListener("click", exportData);
     editDetailBtn.addEventListener("click", openEditDetailModal);
     deleteDetailBtn.addEventListener("click", deleteDetail);
-
-    function findNodeById(nodes, id) {
-        for (const node of nodes) {
-            if (node.id === id) return node;
-            if (node.type === "folder" && node.children) {
-                const found = findNodeById(node.children, id);
-                if (found) return found;
-            }
-        }
-        return null;
-    }
 
     async function renderOverall(folderId) {
         console.log("renderOverall:", folderId);
@@ -137,7 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (folderId !== null) {
             const currentFolder = await fetchFolder(folderId);
             genreTitle.innerText = currentFolder.name;
-            overallMemo.value = currentFolder.overallMemo || "";
+            overallMemo.value = currentFolder.overall_memo || "";
         }
 
         entryList.querySelectorAll(".entry-item:not(#add-item)").forEach(e => e.remove());
@@ -353,9 +344,13 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    function goBack() {
+    async function goBack() {
+        clearTimeout(memoSaveTimer);
+
+        await saveOverallMemo();
+
         currentFolderId = folderStack.pop() ?? null;
-        renderOverall(currentFolderId);
+        await renderOverall(currentFolderId);
     }
 
     async function openEditFolderModal() {
@@ -399,6 +394,32 @@ document.addEventListener("DOMContentLoaded", () => {
 
         console.log("update successfully: ", result);
         editingFolderId = null;
+    }
+
+    async function saveOverallMemo() {
+        if (currentFolderId === null) return;
+
+        const response = await fetch(
+            `http://localhost:3003/api/folders/${currentFolderId}`,
+            {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    overallMemo: overallMemo.value
+                })
+            }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            console.error(result.error);
+            return;
+        }
+
+        console.log("overall memo saved:", result);
     }
 
     async function deleteFolder() {
@@ -519,23 +540,6 @@ document.addEventListener("DOMContentLoaded", () => {
         controlDetailModal.style.left = `${rect.left + window.scrollX - 20}px`;
         controlDetailModal.classList.remove("hidden");
     }
-
-    async function saveStorage() {
-        localStorage.setItem("interestRecord", JSON.stringify(root));
-        console.log("file saved");
-        const response = await fetch("http://localhost:3003/api/folders");
-
-        const folders = await response.json();
-
-        console.log("saved file: ",folders);
-    }
-
-    // function loadStorage() {
-    //     const saved = localStorage.getItem("interestRecord");
-    //     if (!saved) return;
-    //     root = JSON.parse(saved); 
-    //     renderOverall(null);
-    // }
 
     async function loadRootFolders() {
         const folders = await fetchChildrenFolders(null);
