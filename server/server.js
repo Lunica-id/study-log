@@ -1,12 +1,15 @@
 const express = require("express");
 const cors = require("cors");
 const Database = require("better-sqlite3");
+const path = require("path");
 const {z} = require('zod');
 
 const app = express();
 const PORT = 3003;
 
-const db = new Database("study-log.db");
+const db = new Database(
+    path.join(__dirname, "study-log.db")
+);
 
 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
 const folderPostSchema = z.object({
@@ -77,6 +80,9 @@ db.exec(`
     );
 `)
 
+const frontendPath = path.join(__dirname, "..", "app");
+
+app.use(express.static(frontendPath));
 app.use(cors());
 app.use(express.json());
 

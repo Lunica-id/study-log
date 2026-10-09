@@ -371,7 +371,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function updateFolder(folder) {
-        const response = await fetch(`http://localhost:3003/api/folders/${editingFolderId}`,
+        const response = await fetch(`/api/folders/${editingFolderId}`,
             {
                 method: "PATCH",
                 headers: {
@@ -400,7 +400,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (currentFolderId === null) return;
 
         const response = await fetch(
-            `http://localhost:3003/api/folders/${currentFolderId}`,
+            `/api/folders/${currentFolderId}`,
             {
                 method: "PATCH",
                 headers: {
@@ -430,7 +430,7 @@ document.addEventListener("DOMContentLoaded", () => {
         );
         if (!confirmed) return;
 
-        const response = await fetch(`http://localhost:3003/api/folders/${editingFolderId}`,
+        const response = await fetch(`/api/folders/${editingFolderId}`,
             {
                 method: "DELETE"
             }
@@ -454,7 +454,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (editingItemId === null) return;
 
         const response = await fetch(
-            `http://localhost:3003/api/items/${editingItemId}`
+            `/api/items/${editingItemId}`
         );
 
         if (!response.ok) {
@@ -495,7 +495,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!confirmed) return;
 
         const response = await fetch(
-            `http://localhost:3003/api/items/${editingItemId}`,
+            `/api/items/${editingItemId}`,
             {
                 method: "DELETE"
             }
@@ -548,8 +548,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function fetchChildrenFolders(parentId) {
         const url = parentId === null 
-            ? "http://localhost:3003/api/folders/root"
-            : `http://localhost:3003/api/folders/${parentId}/children`
+            ? "/api/folders/root"
+            : `/api/folders/${parentId}/children`
         const response = await fetch(url);
         if (!response.ok) {
             console.error("Failed to fetch folders");
@@ -560,7 +560,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function fetchFolder(id) {
-        const response = await fetch(`http://localhost:3003/api/folders/${id}`);
+        const response = await fetch(`/api/folders/${id}`);
         if (!response) {
             console.error("Failed to fetch folder");
             return [];
@@ -569,7 +569,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function fetchChildrenItems(folderId) {
-        const response = await fetch(`http://localhost:3003/api/items/${folderId}/children`);
+        const response = await fetch(`/api/items/${folderId}/children`);
         if (!response.ok) {
             console.error("Failed to fetch items");
             return [];
@@ -647,7 +647,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     async function createNewFolder(folder) {
-        const response = await fetch("http://localhost:3003/api/folders", {
+        const response = await fetch("/api/folders", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -698,7 +698,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function updateItem(item) {
         const response = await fetch(
-            `http://localhost:3003/api/items/${editingItemId}`,
+            `/api/items/${editingItemId}`,
             {
                 method: "PATCH",
                 headers: {
