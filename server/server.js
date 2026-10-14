@@ -156,6 +156,22 @@ app.get("/api/items/:id/children", (req, res) => {
     res.json(items);
 })
 
+app.get("/api/backup", (req, res) => {
+    const folders = db
+        .prepare(`SELECT * FROM folders`)
+        .all();
+    const items = db
+        .prepare(`SELECT * FROM items`)
+        .all();
+
+    res.json({
+        version:1,
+        exportedAt: new Date().toISOString(),
+        folders,
+        items
+    });
+});
+
 app.post("/api/folders", (req, res) => {
     const result = folderPostSchema.safeParse(req.body);
 

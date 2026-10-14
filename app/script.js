@@ -604,22 +604,30 @@ document.addEventListener("DOMContentLoaded", () => {
         importFileModal.classList.add("hidden");
     }
 
-    function exportData() {
-        const data = localStorage.getItem("interestRecord");
-        if (!data) {
-            alert("No data to back up");
-            return;
+    async function exportData() {
+        try {
+            const response = await fetch("/api/backup");
+            if (!response.ok) {
+                console.error(result.error);
+                return;
+            }
+
+            const data = await response.json();
+            const jsonText = JSON.stringify(data, null, 2);
+
+            const blob = new Blob([jsonText], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `interestRecord_${getTodayString()}.json`;
+            a.click();
+
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("Export failed", error);
+            alert("Failed to export data");
         }
-
-        const blob = new Blob([data], {type: "application/json"});
-        const url = URL.createObjectURL(blob);
-
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `interestRecord_${getTodayString()}.json`;
-        a.click();
-
-        URL.revokeObjectURL(url);
     }
 
     function getTodayString() {
