@@ -578,30 +578,64 @@ document.addEventListener("DOMContentLoaded", () => {
         return await response.json();
     }
 
-    function importData() {
+    async function importData() {
         const file = document.getElementById("import-file").files[0];
+
         if (!file) {
             alert("Please select a file");
             return;
         }
 
-        const reader = new FileReader();
+        try {
+            const text = await file.text();
+            const data = JSON.parse(text);
 
-        reader.onload = () => {
-            try {
-                const parsed = JSON.parse(reader.result);
-                root = parsed;
-                saveStorage();
-                renderOverall(null);
-                importFileModal.classList.add("hidden");
-            } catch {
-                alert("Invalid file");
+            if (
+                data.version !== 1 ||
+                !Array.isArray(data.folders) ||
+                !Array.isArray(data.items)
+            ) {
+                throw new Error("Invalid backup format");
             }
-        };
 
-        reader.readAsText(file);
-        document.getElementById("import-file").value = "";
-        importFileModal.classList.add("hidden");
+            const confirmed = confirm(
+                "Importing this backup will replace all current data. Continue?"
+            );
+
+            if (!confirmed) return;
+
+            const response = await fetch("/api/backup", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    result.error || "Failed to import backup"
+                );
+            }
+
+            currentFolderId = null;
+            folderStack = [];
+            editingFolderId = null;
+            editingItemId = null;
+
+            await renderOverall(null);
+
+            importFileModal.classList.add("hidden");
+            document.getElementById("import-file").value = "";
+
+            alert("Import completed successfully");
+
+        } catch (error) {
+            console.error("Import failed:", error);
+            alert("Failed to import data: " + error.message);
+        }
     }
 
     async function exportData() {

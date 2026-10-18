@@ -48,6 +48,32 @@ const itemPatchSchema = z.object({
     }),
     memo: z.string().nullable().optional()
 });
+const backupSchema = z.object({
+    version: z.literal(1),
+    exportedAt: z.string(),
+    folders: z.array(
+        z.object({
+            id: z.number().int().positive(),
+            parent_id: z.number().int().positive().nullable(),
+            name: z.string().min(1),
+            date: z.string().regex(datePattern),
+            overall_memo: z.string().nullable()
+        })
+    ),
+    items: z.array(
+        z.object({
+            id: z.number().int().positive(),
+            folder_id: z.number().int().positive(),
+            type: z.enum(["link", "youtube", "book", "document"]),
+            source: z.string().nullable(),
+            isbn: z.string().nullable(),
+            title: z.string().min(1),
+            date: z.string().regex(datePattern),
+            memo: z.string().nullable()
+        })
+    )
+});
+
 
 db.pragma("foreign_keys = ON"); //sqlite3パッケージの場合コードが異なる
 
@@ -257,6 +283,139 @@ app.post("/api/items", (req, res) => {
 
         res.status(500).json({
             error: "Failed to create item"
+        });
+    }
+});
+
+app.post("/api/backup", (req, res) => {
+    const result = backupSchema.safeParse(req.body);
+
+    if (!result.success) {
+        return res.status(400).json({
+            error: "Invalid backup data",
+            details: result.error.issues
+        });
+    }
+
+    const { folders, items } = result.data;
+    const folderIds = new Set(folders.map(folder => folder.id));
+
+    if (folderIds.size !== folders.length) {
+        return res.status(400).json({
+            error: "Duplicate folder IDs"
+        });
+    }
+
+    const itemIds = new Set(items.map(item => item.id));
+
+    if (itemIds.size !== items.length) {
+        return res.status(400).json({
+            error: "Duplicate item IDs"
+        });
+    }
+
+    for (const folder of folders) {
+        if (
+            folder.parent_id !== null &&
+            !folderIds.has(folder.parent_id)
+        ) {
+            return res.status(400).json({
+                error: "Parent folder not found"
+            });
+        }
+
+        if (folder.parent_id === folder.id) {
+            return res.status(400).json({
+                error: "A folder cannot be its own parent"
+            });
+        }
+    }
+
+    for (const item of items) {
+        if (!folderIds.has(item.folder_id)) {
+            return res.status(400).json({
+                error: "Item folder not found"
+            });
+        }
+    }
+
+    try {
+        const importBackup = db.transaction(() => {
+            db.prepare("DELETE FROM items").run();
+            db.prepare("DELETE FROM folders").run();
+
+            const pending = [...folders];
+            const insertFolder = db.prepare(`
+                INSERT INTO folders
+                    (id, parent_id, name, date, overall_memo)
+                VALUES (?, ?, ?, ?, ?)
+            `);
+
+            const insertedIds = new Set();
+
+            while (pending.length > 0) {
+                let insertedThisRound = 0;
+
+                for (let i = pending.length - 1; i >= 0; i--) {
+                    const folder = pending[i];
+
+                    const parentReady =
+                        folder.parent_id === null ||
+                        insertedIds.has(folder.parent_id);
+
+                    if (!parentReady) continue;
+
+                    insertFolder.run(
+                        folder.id,
+                        folder.parent_id,
+                        folder.name,
+                        folder.date,
+                        folder.overall_memo
+                    );
+
+                    insertedIds.add(folder.id);
+                    pending.splice(i, 1);
+                    insertedThisRound++;
+                }
+
+                if (insertedThisRound === 0) {
+                    throw new Error(
+                        "Invalid folder hierarchy or circular reference"
+                    );
+                }
+            }
+
+            const insertItem = db.prepare(`
+                INSERT INTO items
+                    (id, folder_id, type, source, isbn, title, date, memo)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            `);
+
+            for (const item of items) {
+                insertItem.run(
+                    item.id,
+                    item.folder_id,
+                    item.type,
+                    item.source,
+                    item.isbn,
+                    item.title,
+                    item.date,
+                    item.memo
+                );
+            }
+        });
+
+        importBackup();
+
+        return res.json({
+            message: "Backup imported successfully"
+        });
+
+    } catch (err) {
+        console.error("Import failed:", err);
+
+        return res.status(500).json({
+            error: "Failed to import backup"
         });
     }
 });
