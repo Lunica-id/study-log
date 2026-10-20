@@ -348,8 +348,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 },
                 body: JSON.stringify({
                     name: folder.name,
-                    date: folder.date,
-                    overallMemo: folder.overallMemo
+                    date: folder.date
                 })
             }
         );
@@ -672,7 +671,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 parentId: currentFolderId,
                 name: folder.name,
                 date: folder.date,
-                overallMemo: folder.overallMemo
+                overallMemo: null
             })
         });
 
@@ -741,7 +740,3 @@ document.addEventListener("DOMContentLoaded", () => {
         console.log("update item successfully:", result);
     }
 })
-
-
-
-        
