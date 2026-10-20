@@ -35,16 +35,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const editDetailBtn = document.getElementById("edit-detail-btn");
     const deleteDetailBtn = document.getElementById("delete-detail-btn");
 
-    let root = { id: null, name: "root", type: "folder", children: []};
     let folderStack = [];
     let currentFolderId = null;
     let editingFolderId = null;
     let editingItemId = null;
 
-    let currentParentId = null;
     let memoSaveTimer = null;
 
-    //loadStorage();
     loadRootFolders();
     document.addEventListener("click", (e) => { 
         if (!controlHomeModal.contains(e.target) && !controlHomeModal.classList.contains("hidden")) {
@@ -115,7 +112,6 @@ document.addEventListener("DOMContentLoaded", () => {
     deleteDetailBtn.addEventListener("click", deleteDetail);
 
     async function renderOverall(folderId) {
-        console.log("renderOverall:", folderId);
         const folders = await fetchChildrenFolders(folderId);
 
         if (folderId === null) {
@@ -139,7 +135,6 @@ document.addEventListener("DOMContentLoaded", () => {
         renderItems(items);
 
         currentFolderId = folderId;
-        console.log("currentFolderId:"+currentFolderId);
         genreListSection.classList.add("hidden");
         detailSection.classList.remove("hidden");
     }
@@ -148,8 +143,6 @@ document.addEventListener("DOMContentLoaded", () => {
         wrapper.querySelectorAll(".genre-grid:not(#add-grid, #add-subgrid)").forEach(e => e.remove());
 
         folders.forEach(folder => {
-            //if (folder.type !== "folder") return;
-
             const div = document.createElement("div");
             div.className = "genre-grid sweep-hover";
             div.dataset.nodeId = folder.id;
@@ -235,9 +228,9 @@ document.addEventListener("DOMContentLoaded", () => {
     async function handleParentSubmit(e) {
         e.preventDefault();
 
-        console.log("handleParentSubmit start");
-        console.log("currentFolderId:", currentFolderId);
-        console.log("editingFolderId:", editingFolderId);
+        // console.log("handleParentSubmit start");
+        // console.log("currentFolderId:", currentFolderId);
+        // console.log("editingFolderId:", editingFolderId);
 
         const name = document.getElementById("genre-name").value.trim();
         const date = document.getElementById("date").value || getTodayString();
@@ -246,36 +239,10 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Please fill in genre name");
             return;
         }
-        // if (currentFolderId === null) {
-        //     parentChildren = root.children;
-        // } else {
-        //     const parent = findNodeById(root.children, currentFolderId);
-        //     if (!parent) return;
-        //     parentChildren = parent.children;
-        // }
-        // if (editingFolderId !== null) {
-        //     const folder = findNodeById(root.children, editingFolderId);
-        //     if (!folder || folder.type !== "folder") return;
-        //     folder.name = name;
-        //     folder.date = date;
-        //     editingFolderId = null;
-        // } else {
-        //     parentChildren.push({
-        //         id: Date.now(),
-        //         type: "folder",
-        //         name,
-        //         date,
-        //         overallMemo: "",
-        //         children: []
-        //     });
-        // }
-        // editGenreModal.classList.add("hidden");
-        // saveStorage();
 
         const folder = {
                 name: name,
-                date: date,
-                overallMemo: null
+                date: date
             };
         
         if (editingFolderId !== null) {
@@ -287,17 +254,12 @@ document.addEventListener("DOMContentLoaded", () => {
         editGenreModal.classList.add("hidden");
         document.getElementById("genre-name").value = "";
         document.getElementById("date").value = "";
-        
-        console.log("currentFolderId before render:", currentFolderId);
 
         await renderOverall(currentFolderId);
-
-        console.log("after render:", currentFolderId);
     }
 
     async function handleDetailSubmit(e) {
         e.preventDefault();
-        console.log("handleDetailSubmit fired");
 
         const type = document.getElementById("detail-type").value;
         const source = document.getElementById("detail-source").value;
@@ -344,10 +306,17 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    async function goBack() {
+    async function goBack({saveMemo = true} = {}) {
         clearTimeout(memoSaveTimer);
 
-        await saveOverallMemo();
+        if (saveMemo) {
+            const saved = await saveOverallMemo();
+
+        if (!saved) {
+            alert("Memo could not be saved. Please try again.");
+            return;
+        }
+    }
 
         currentFolderId = folderStack.pop() ?? null;
         await renderOverall(currentFolderId);
@@ -397,29 +366,32 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function saveOverallMemo() {
-        if (currentFolderId === null) return;
+        if (currentFolderId === null) return true;
 
-        const response = await fetch(
-            `/api/folders/${currentFolderId}`,
-            {
-                method: "PATCH",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    overallMemo: overallMemo.value
-                })
+        try {
+            const response = await fetch(
+                `/api/folders/${currentFolderId}`,
+                {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        overallMemo: overallMemo.value
+                    })
+                }
+            );
+
+            if (!response.ok) {
+                console.error("Failed to save memo:", response.status);
+                return false;
             }
-        );
 
-        const result = await response.json();
-
-        if (!response.ok) {
-            console.error(result.error);
-            return;
+            return true;
+        } catch (error) {
+            console.error("Failed to save memo:", error);
+            return false;
         }
-
-        console.log("overall memo saved:", result);
     }
 
     async function deleteFolder() {
@@ -429,6 +401,7 @@ document.addEventListener("DOMContentLoaded", () => {
             "Are you sure you want to delete this folder? All subfolders and details will be deleted."
         );
         if (!confirmed) return;
+        clearTimeout(memoSaveTimer);
 
         const response = await fetch(`/api/folders/${editingFolderId}`,
             {
@@ -440,6 +413,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!response.ok) {
             console.error(result.error);
+            await goBack();
             return;
         }
 
@@ -447,7 +421,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         editingFolderId = null;
         controlFolderModal.classList.add("hidden");
-        goBack();
+        await goBack({saveMemo:false});
     }
 
     async function openEditDetailModal() {
@@ -561,7 +535,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function fetchFolder(id) {
         const response = await fetch(`/api/folders/${id}`);
-        if (!response) {
+        if (!response.ok) {
             console.error("Failed to fetch folder");
             return [];
         }
@@ -642,7 +616,7 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const response = await fetch("/api/backup");
             if (!response.ok) {
-                console.error(result.error);
+                console.error("failed");  //TODO
                 return;
             }
 
@@ -713,7 +687,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function createNewItem(item) {
-        const response = await fetch ("http://localhost:3003/api/items", {
+        const response = await fetch ("/api/items", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
