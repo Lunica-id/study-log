@@ -5,3 +5,4 @@ test/
 server/study-log.db
 server/test.db
 server/test-server.js
+jsconfig.json
