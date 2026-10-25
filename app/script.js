@@ -112,31 +112,39 @@ document.addEventListener("DOMContentLoaded", () => {
     deleteDetailBtn.addEventListener("click", deleteDetail);
 
     async function renderOverall(folderId) {
-        const folders = await fetchChildrenFolders(folderId);
+		try {
+			const folders = await fetchChildrenFolders(folderId);
 
-        if (folderId === null) {
-            renderFolders(folders, rootGenreWrapper);
-            genreListSection.classList.remove("hidden");
-            detailSection.classList.add("hidden");
-            return;
-        }
+			if (folderId === null) {
+				renderFolders(folders, rootGenreWrapper);
+				genreListSection.classList.remove("hidden");
+				detailSection.classList.add("hidden");
+				return;
+			}
 
-        if (folderId !== null) {
-            const currentFolder = await fetchFolder(folderId);
-            genreTitle.innerText = currentFolder.name;
-            overallMemo.value = currentFolder.overall_memo || "";
-        }
+			if (folderId !== null) {
+				const currentFolder = await fetchFolder(folderId);
+				genreTitle.innerText = currentFolder.name;
+				overallMemo.value = currentFolder.overall_memo || "";
+			}
 
-        entryList.querySelectorAll(".entry-item:not(#add-item)").forEach(e => e.remove());
+			const items = await fetchChildrenItems(folderId);
 
-        renderFolders(folders, subGenreWrapper);
+			entryList
+				.querySelectorAll(".entry-item:not(#add-item)")
+				.forEach((e) => e.remove());
 
-        const items = await fetchChildrenItems(folderId);
-        renderItems(items);
+			renderFolders(folders, subGenreWrapper);
+			renderItems(items);
 
-        currentFolderId = folderId;
-        genreListSection.classList.add("hidden");
-        detailSection.classList.remove("hidden");
+			currentFolderId = folderId;
+			genreListSection.classList.add("hidden");
+			detailSection.classList.remove("hidden");
+		} catch (error) {
+			console.error("Failed to render folder:", error);
+			alert("Failed to load folder data. Please try again.");
+			return;
+		}
     }
 
     function renderFolders(folders, wrapper) {
@@ -228,10 +236,6 @@ document.addEventListener("DOMContentLoaded", () => {
     async function handleParentSubmit(e) {
         e.preventDefault();
 
-        // console.log("handleParentSubmit start");
-        // console.log("currentFolderId:", currentFolderId);
-        // console.log("editingFolderId:", editingFolderId);
-
         const name = document.getElementById("genre-name").value.trim();
         const date = document.getElementById("date").value || getTodayString();
 
@@ -241,15 +245,21 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         const folder = {
-                name: name,
-                date: date
-            };
+            name: name,
+            date: date
+        };
         
+		let success;
         if (editingFolderId !== null) {
-            await updateFolder(folder); 
+            success = await updateFolder(folder); 
         } else {
-            await createNewFolder(folder);
+            success = await createNewFolder(folder);
         }
+
+		if(!success) {
+			alert("Failed to save folder.");
+			return;
+		}
         
         editGenreModal.classList.add("hidden");
         document.getElementById("genre-name").value = "";
@@ -277,13 +287,19 @@ document.addEventListener("DOMContentLoaded", () => {
             memo: memo
         };
 
+		let success;
         if (editingItemId !== null) {
-            await updateItem(item);
-            editingItemId = null;
+            success = await updateItem(item);
         } else {
-            await createNewItem(item);
+            success = await createNewItem(item);
         }
 
+		if(!success) {
+			alert("Failed to save item. Please try again.");
+			return;
+		}
+
+		editingItemId = null;
         editDetailModal.classList.add("hidden");
 
         document.getElementById("detail-type").value = "link";
@@ -312,56 +328,65 @@ document.addEventListener("DOMContentLoaded", () => {
         if (saveMemo) {
             const saved = await saveOverallMemo();
 
-        if (!saved) {
-            alert("Memo could not be saved. Please try again.");
-            return;
-        }
-    }
+        	if (!saved) {
+            	alert("Memo could not be saved. Please try again.");
+            	return;
+        	}
+    	}
 
         currentFolderId = folderStack.pop() ?? null;
         await renderOverall(currentFolderId);
     }
 
     async function openEditFolderModal() {
-        if (editingFolderId === null) return;
+		try {
+			if (editingFolderId === null) return;
 
-        const folder = await fetchFolder(editingFolderId);
+	        const folder = await fetchFolder(editingFolderId);
 
-        if (!folder) return;
+    	    if (!folder) return;
 
-        editGenreType.innerText = "Edit Folder";
-        genreSubmitBtn.innerText = "Edit";
+        	editGenreType.innerText = "Edit Folder";
+    	    genreSubmitBtn.innerText = "Edit";
 
-        document.getElementById("genre-name").value = folder.name;
-        document.getElementById("date").value = folder.date;
+        	document.getElementById("genre-name").value = folder.name;
+	        document.getElementById("date").value = folder.date;
 
-        editGenreModal.classList.remove("hidden");
-        controlFolderModal.classList.add("hidden");
+    	    editGenreModal.classList.remove("hidden");
+        	controlFolderModal.classList.add("hidden");
+		} catch (error) {
+			console.error("Failed to render folder:", error);
+			alert("Failed to load folder data. Please try again.");
+			return;
+		}
+
     }
 
     async function updateFolder(folder) {
-        const response = await fetch(`/api/folders/${editingFolderId}`,
-            {
-                method: "PATCH",
-                headers: {
-                    "Content-Type": "application/json"
-                },
+        try {
+			const response = await fetch(`/api/folders/${editingFolderId}`, {
+            	method: "PATCH",
+	            headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({
-                    name: folder.name,
-                    date: folder.date
+            	    name: folder.name,
+                	date: folder.date
                 })
-            }
-        );
+    	    });
 
-        const result = await response.json();
-        
-        if (!response.ok) {
-            console.error(result.error);
-            return;
-        }
+	        const result = await response.json();
 
-        console.log("update successfully: ", result);
-        editingFolderId = null;
+	        if (!response.ok) {
+    	        console.error(result.error);
+        	    return false;
+        	}
+
+	        console.log("update successfully: ", result);
+    	    editingFolderId = null;
+			return true;
+		} catch (error) {
+			console.error("Failed to update folder:", error);
+			return false;
+		}
     }
 
     async function saveOverallMemo() {
@@ -400,27 +425,30 @@ document.addEventListener("DOMContentLoaded", () => {
             "Are you sure you want to delete this folder? All subfolders and details will be deleted."
         );
         if (!confirmed) return;
-        clearTimeout(memoSaveTimer);
 
-        const response = await fetch(`/api/folders/${editingFolderId}`,
-            {
-                method: "DELETE"
-            }
-        );
+		try {
+			clearTimeout(memoSaveTimer);
 
-        const result = await response.json();
+			const response = await fetch(`/api/folders/${editingFolderId}`, {
+				method: "DELETE"
+			});
 
-        if (!response.ok) {
-            console.error(result.error);
-            await goBack();
-            return;
-        }
+			const result = await response.json();
 
-        console.log("delete successfully:", result);
+			if (!response.ok) {
+				console.error(result.error);
+				return;
+			}
 
-        editingFolderId = null;
-        controlFolderModal.classList.add("hidden");
-        await goBack({saveMemo:false});
+			console.log("delete successfully:", result);
+
+			editingFolderId = null;
+			controlFolderModal.classList.add("hidden");
+			await goBack({ saveMemo: false });
+		} catch (error) {
+			console.error("Failed to delete folder:", error);
+			return;
+		}
     }
 
     async function openEditDetailModal() {
@@ -535,8 +563,7 @@ document.addEventListener("DOMContentLoaded", () => {
     async function fetchFolder(id) {
         const response = await fetch(`/api/folders/${id}`);
         if (!response.ok) {
-            console.error("Failed to fetch folder");
-            return [];
+            throw new Error("Failed to fetch a folder");
         }
         return await response.json();
     }
@@ -544,8 +571,7 @@ document.addEventListener("DOMContentLoaded", () => {
     async function fetchChildrenItems(folderId) {
         const response = await fetch(`/api/items/${folderId}/children`);
         if (!response.ok) {
-            console.error("Failed to fetch items");
-            return [];
+            throw new Error("Failed to fetch items");
         }
 
         return await response.json();
@@ -660,83 +686,92 @@ document.addEventListener("DOMContentLoaded", () => {
         return null;
     }
 
-
     async function createNewFolder(folder) {
-        const response = await fetch("/api/folders", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                parentId: currentFolderId,
-                name: folder.name,
-                date: folder.date,
-                overallMemo: null
-            })
-        });
+		try {
+			const response = await fetch("/api/folders", {
+	            method: "POST",
+    	        headers: { "Content-Type": "application/json" },
+	            body: JSON.stringify({
+    	            parentId: currentFolderId,
+        	        name: folder.name,
+            	    date: folder.date,
+                	overallMemo: null
+            	})
+        	});
 
-        const result = await response.json();
+	        const result = await response.json();
 
-        if(!response.ok) {
-            console.error(result.error);
-            return;
-        }
+    	    if (!response.ok) {
+				console.error("Failed to create folder:", response.status,result);
+				return false;
+			}
 
-        console.log("create successfully: ", result);
+	        console.log("create successfully: ", result);
+			return true;
+		} catch (error) {
+			console.error("Failed to create folder:", error);
+			return false;
+		}
+        
     }
 
     async function createNewItem(item) {
-        const response = await fetch ("/api/items", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                folderId: currentFolderId,
-                type: item.type,
-                source: item.source,
-                isbn: item.isbn,
-                title: item.title,
-                date: item.date,
-                memo: item.memo
-            })
-        });
-        const result = await response.json();
+		try {
+			const response = await fetch("/api/items", {
+				method: "POST",
+				headers: {"Content-Type": "application/json"},
+				body: JSON.stringify({
+					folderId: currentFolderId,
+					type: item.type,
+					source: item.source,
+					isbn: item.isbn,
+					title: item.title,
+					date: item.date,
+					memo: item.memo,
+				})
+			});
+			const result = await response.json();
 
-        if (!response.ok) {
-            console.error(result.error);
-            return;
-        }
+			if (!response.ok) {
+				console.error(result.error);
+				return false;
+			}
 
-        console.log("create item successfully: ", result);
+			console.log("create item successfully: ", result);
+			return true;
+		} catch (error) {
+			console.error("Failed to create item:", error);
+			return false;
+		}
     }
 
     async function updateItem(item) {
-        const response = await fetch(
-            `/api/items/${editingItemId}`,
-            {
-                method: "PATCH",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    type: item.type,
-                    source: item.source,
-                    isbn: item.isbn,
-                    title: item.title,
-                    date: item.date,
-                    memo: item.memo
-                })
-            }
-        );
+		try {
+			const response = await fetch(`/api/items/${editingItemId}`, {
+				method: "PATCH",
+				headers: {"Content-Type": "application/json"},
+				body: JSON.stringify({
+					type: item.type,
+					source: item.source,
+					isbn: item.isbn,
+					title: item.title,
+					date: item.date,
+					memo: item.memo
+				})
+			});
 
-        const result = await response.json();
+			const result = await response.json();
 
-        if (!response.ok) {
-            console.error(result.error);
-            return;
-        }
+			if (!response.ok) {
+				console.error(result.error);
+				return false;
+			}
 
-        console.log("update item successfully:", result);
+			console.log("update item successfully:", result);
+			return true;
+		} catch (error) {
+			console.error("Failed to update item", error);
+			return false;
+		}
     }
 })
