@@ -119,16 +119,19 @@ document.addEventListener("DOMContentLoaded", () => {
 				renderFolders(folders, rootGenreWrapper);
 				genreListSection.classList.remove("hidden");
 				detailSection.classList.add("hidden");
-				return;
+
+                currentFolderId = null;
+				return true;
 			}
 
+			const items = await fetchChildrenItems(folderId);
+
+            const fragment = document.createDocumentFragment();
 			if (folderId !== null) {
 				const currentFolder = await fetchFolder(folderId);
 				genreTitle.innerText = currentFolder.name;
 				overallMemo.value = currentFolder.overall_memo || "";
 			}
-
-			const items = await fetchChildrenItems(folderId);
 
 			entryList
 				.querySelectorAll(".entry-item:not(#add-item)")
@@ -140,10 +143,12 @@ document.addEventListener("DOMContentLoaded", () => {
 			currentFolderId = folderId;
 			genreListSection.classList.add("hidden");
 			detailSection.classList.remove("hidden");
+            return true;
 		} catch (error) {
 			console.error("Failed to render folder:", error);
 			alert("Failed to load folder data. Please try again.");
-			return;
+            console.log(currentFolderId, ":", folderStack);
+			return false;
 		}
     }
 
@@ -160,10 +165,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 <p>${folder.date}</p>
             `;
 
-            div.addEventListener("click", () => {
-                folderStack.push(currentFolderId);
-                currentFolderId = folder.id;
-                renderOverall(folder.id);
+            div.addEventListener("click", async() => {
+                const previousFolderId = currentFolderId;
+                const success = await renderOverall(folder.id);
+                if(success) {
+                    folderStack.push(previousFolderId);
+                }
             });
 
             wrapper.appendChild(div);
@@ -171,6 +178,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function renderItems(items) {
+        //throw new Error("Test rendering error");
         items.forEach(item => {
             const li = document.createElement("li");
             li.className = "entry-item";
@@ -334,8 +342,12 @@ document.addEventListener("DOMContentLoaded", () => {
         	}
     	}
 
-        currentFolderId = folderStack.pop() ?? null;
-        await renderOverall(currentFolderId);
+        const previousFolderId = folderStack[folderStack.length -1] ?? null;
+        const success = await renderOverall(previousFolderId);
+        if (success) {
+            folderStack.pop();
+            currentFolderId = previousFolderId;
+        }
     }
 
     async function openEditFolderModal() {
@@ -447,43 +459,49 @@ document.addEventListener("DOMContentLoaded", () => {
 			await goBack({ saveMemo: false });
 		} catch (error) {
 			console.error("Failed to delete folder:", error);
+			alert("Failed to delete folder. Please try again.");
 			return;
 		}
     }
 
     async function openEditDetailModal() {
-        if (editingItemId === null) return;
+		try {
+			if (editingItemId === null) return;
 
-        const response = await fetch(
-            `/api/items/${editingItemId}`
-        );
+	        const response = await fetch(
+    	        `/api/items/${editingItemId}`
+        	);
 
-        if (!response.ok) {
-            console.error("Failed to fetch item");
-            return;
-        }
+	        if (!response.ok) {
+    	        console.error("Failed to fetch item");
+        	    return;
+        	}
 
-        const item = await response.json();
+	        const item = await response.json();
 
-        editDetailType.innerText = "Edit Detail";
-        detailSubmitBtn.innerText = "Edit";
+    	    editDetailType.innerText = "Edit Detail";
+        	detailSubmitBtn.innerText = "Edit";
 
-        document.getElementById("detail-type").value = item.type;
+	        document.getElementById("detail-type").value = item.type;
 
-        document.getElementById("detail-source").value =
-            item.type === "youtube"
-                ? `https://www.youtube.com/watch?v=${item.source}`
-                : item.source ?? "";
+    	    document.getElementById("detail-source").value =
+        	    item.type === "youtube"
+            	    ? `https://www.youtube.com/watch?v=${item.source}`
+                	: item.source ?? "";
 
-        document.getElementById("detail-isbn").value = item.isbn ?? "";
-        document.getElementById("detail-title").value = item.title;
-        document.getElementById("detail-date").value = item.date;
-        document.getElementById("detail-memo").value = item.memo ?? "";
+	        document.getElementById("detail-isbn").value = item.isbn ?? "";
+    	    document.getElementById("detail-title").value = item.title;
+        	document.getElementById("detail-date").value = item.date;
+	        document.getElementById("detail-memo").value = item.memo ?? "";
 
-        updateDetailForm();
+    	    updateDetailForm();
 
-        editDetailModal.classList.remove("hidden");
-        controlDetailModal.classList.add("hidden");
+	        editDetailModal.classList.remove("hidden");
+    	    controlDetailModal.classList.add("hidden");
+		} catch (error) {
+			console.error("Failed to open detail edit modal", error);
+			alert("Failed to open detail edit modal. Please try again.");
+		}
     }
 
     async function deleteDetail() {
@@ -492,29 +510,34 @@ document.addEventListener("DOMContentLoaded", () => {
         const confirmed = confirm(
             "Are you sure you want to delete this item? You cannot restore it."
         );
-
         if (!confirmed) return;
 
-        const response = await fetch(
+		try {
+    	    const response = await fetch(
             `/api/items/${editingItemId}`,
             {
                 method: "DELETE"
             }
-        );
+        	);
 
-        const result = await response.json();
+	        const result = await response.json();
 
-        if (!response.ok) {
-            console.error(result.error);
-            return;
-        }
+    	    if (!response.ok) {
+        	    console.error(result.error);
+            	return;
+        	}
 
-        console.log("delete item successfully:", result);
+	        console.log("delete item successfully:", result);
 
-        editingItemId = null;
-        controlDetailModal.classList.add("hidden");
+    	    editingItemId = null;
+        	controlDetailModal.classList.add("hidden");
     
-        await renderOverall(currentFolderId);
+	        await renderOverall(currentFolderId);
+		} catch (error) {
+			console.error("Failed to delete item:", error);
+			alert("Failed to delete item. Please try again.");
+			return;
+		}
     }
 
     function openControlFolderModal() {
@@ -543,8 +566,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function loadRootFolders() {
-        const folders = await fetchChildrenFolders(null);
-        renderFolders(folders, rootGenreWrapper);
+		try {
+			const folders = await fetchChildrenFolders(null);
+        	renderFolders(folders, rootGenreWrapper);
+		} catch (error) {
+			console.error("Failed to load root folder.");
+		}
+        
     }
 
     async function fetchChildrenFolders(parentId) {
@@ -553,8 +581,7 @@ document.addEventListener("DOMContentLoaded", () => {
             : `/api/folders/${parentId}/children`
         const response = await fetch(url);
         if (!response.ok) {
-            console.error("Failed to fetch folders");
-            return [];
+            throw new Error("Failed to fetch folders");
         }
 
         return await response.json();
