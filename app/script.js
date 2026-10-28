@@ -116,52 +116,50 @@ document.addEventListener("DOMContentLoaded", () => {
 			const folders = await fetchChildrenFolders(folderId);
 
 			if (folderId === null) {
-				renderFolders(folders, rootGenreWrapper);
+                const tempWrapper = document.createElement("div");
+				renderFolders(folders, tempWrapper);
+
+                replaceList(rootGenreWrapper, tempWrapper, ".genre-grid:not(#add-grid, #add-subgrid)",addGridBtn);
 				genreListSection.classList.remove("hidden");
 				detailSection.classList.add("hidden");
-
                 currentFolderId = null;
 				return true;
 			}
 
 			const items = await fetchChildrenItems(folderId);
+            const currentFolder = await fetchFolder(folderId);
+            const tempFolderWrapper = document.createElement("div");
+            const tempItemWrapper = document.createElement("div");
 
-            const fragment = document.createDocumentFragment();
-			if (folderId !== null) {
-				const currentFolder = await fetchFolder(folderId);
-				genreTitle.innerText = currentFolder.name;
-				overallMemo.value = currentFolder.overall_memo || "";
-			}
+			renderFolders(folders, tempFolderWrapper);
+			renderItems(items,tempItemWrapper);
 
-			entryList
-				.querySelectorAll(".entry-item:not(#add-item)")
-				.forEach((e) => e.remove());
+            replaceList(subGenreWrapper,tempFolderWrapper,".genre-grid:not(#add-grid, #add-subgrid)",addSubGridBtn);
+            replaceList(entryList,tempItemWrapper,".entry-item:not(#add-item)",addItemBtn);
 
-			renderFolders(folders, subGenreWrapper);
-			renderItems(items);
+			genreTitle.innerText = currentFolder.name;
+			overallMemo.value = currentFolder.overall_memo || "";
 
-			currentFolderId = folderId;
 			genreListSection.classList.add("hidden");
 			detailSection.classList.remove("hidden");
+
+            currentFolderId = folderId;
             return true;
 		} catch (error) {
 			console.error("Failed to render folder:", error);
 			alert("Failed to load folder data. Please try again.");
-            console.log(currentFolderId, ":", folderStack);
 			return false;
 		}
     }
 
     function renderFolders(folders, wrapper) {
-        wrapper.querySelectorAll(".genre-grid:not(#add-grid, #add-subgrid)").forEach(e => e.remove());
-
         folders.forEach(folder => {
             const div = document.createElement("div");
             div.className = "genre-grid sweep-hover";
             div.dataset.nodeId = folder.id;
 
             div.innerHTML = `
-                <h3>${folder.name}<h3>
+                <h3>${folder.name}</h3>
                 <p>${folder.date}</p>
             `;
 
@@ -177,8 +175,7 @@ document.addEventListener("DOMContentLoaded", () => {
         })
     }
 
-    function renderItems(items) {
-        //throw new Error("Test rendering error");
+    function renderItems(items, wrapper) {
         items.forEach(item => {
             const li = document.createElement("li");
             li.className = "entry-item";
@@ -237,8 +234,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 `;
             }
 
-            entryList.appendChild(li);
+            wrapper.appendChild(li);
         })
+    }
+
+    function replaceList(wrapper, tempWrapper, selector, addButton) {
+        wrapper.querySelectorAll(selector).forEach(element => element.remove());
+
+        let nextElement = addButton.nextSibling;
+
+        while(tempWrapper.firstChild) {
+            wrapper.insertBefore(tempWrapper.firstChild,nextElement);
+        }
     }
 
     async function handleParentSubmit(e) {
@@ -346,7 +353,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const success = await renderOverall(previousFolderId);
         if (success) {
             folderStack.pop();
-            currentFolderId = previousFolderId;
         }
     }
 
@@ -566,13 +572,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function loadRootFolders() {
-		try {
-			const folders = await fetchChildrenFolders(null);
-        	renderFolders(folders, rootGenreWrapper);
-		} catch (error) {
-			console.error("Failed to load root folder.");
-		}
-        
+        await renderOverall(null);
     }
 
     async function fetchChildrenFolders(parentId) {
