@@ -1,39 +1,39 @@
 document.addEventListener("DOMContentLoaded", () => {
     console.log("script.js loaded");
-    const genreListSection = document.getElementById("genre-list");
+    const folderListSection = document.getElementById("folder-list-section");
     const homeEllipsis = document.getElementById("home-ellipsis");
-    const rootGenreWrapper = genreListSection.querySelector("#genre-list .wrapper");
-    const addGridBtn = document.getElementById("add-grid");
-    const addItemBtn = document.getElementById("add-item");
-    const detailSection = document.getElementById("genre-detail");
-    const genreTitle = detailSection.querySelector(".genre-title");
-    const detailEllipsis = document.getElementById("detail-ellipsis");
-    const entryList = detailSection.querySelector(".entry-list");
+    const rootFolderWrapper = folderListSection.querySelector(".wrapper");
+    const addRootFolderButton = document.getElementById("add-root-folder");
+    const addItemButton = document.getElementById("add-item");
+    const folderContentSection = document.getElementById("folder-content-section");
+    const folderTitle = folderContentSection.querySelector(".folder-title");
+    const folderMenuButton = document.getElementById("folder-menu-button");
+    const itemList = folderContentSection.querySelector(".item-list");
     const overallMemo = document.querySelector(".overall-memo");
-    const closeDetailBtn = document.getElementById("close-detail-btn");
-    const subGenreWrapper = document.querySelector("#genre-detail .wrapper");
-    const addSubGridBtn = document.getElementById("add-subgrid");
-    const editGenreModal = document.getElementById("edit-genre-modal");
-    const editGenreType = document.getElementById("edit-genre-type");
-    const genreCancelBtn = document.getElementById("genre-cancel-btn");
-    const genreSubmitBtn = document.getElementById("genre-submit-btn");
+    const backButton = document.getElementById("back-button");
+    const childFolderWrapper = document.querySelector("#folder-content-section .wrapper");                                                                                                                                                                                                                                                                                                                                                                                                                                                       
+    const addChildFolderButton = document.getElementById("add-child-folder");
+    const editFolderModal = document.getElementById("edit-folder-modal");
+    const editFolderHeading = document.getElementById("edit-folder-heading");
+    const folderCancelButton = document.getElementById("folder-cancel-button");
+    const folderSubmitButton = document.getElementById("folder-submit-button");
     const controlHomeModal = document.getElementById("control-home-modal");
-    const importBtn = document.getElementById("import-btn");
-    const exportBtn = document.getElementById("export-btn");
+    const importBtn = document.getElementById("import-button");
+    const exportBtn = document.getElementById("export-button");
     const importFileModal = document.getElementById("import-file-modal");
-    const importCancelBtn = document.getElementById("import-cancel-btn");
-    const importSubmitBtn = document.getElementById("import-submit-btn");
-    const editDetailModal = document.getElementById("edit-detail-modal");
-    const editDetailType = document.getElementById("edit-detail-type");
-    const typeSelect = document.getElementById("detail-type");
-    const detailCancelBtn = document.getElementById("detail-cancel-btn");
-    const detailSubmitBtn = document.getElementById("detail-submit-btn");
-    const controlFolderModal = document.getElementById("control-folder-modal");
-    const editFolderBtn = document.getElementById("edit-folder-btn");
-    const deleteFolderBtn = document.getElementById("delete-folder-btn");
-    const controlDetailModal = document.getElementById("control-detail-modal");
-    const editDetailBtn = document.getElementById("edit-detail-btn");
-    const deleteDetailBtn = document.getElementById("delete-detail-btn");
+    const importCancelBtn = document.getElementById("import-cancel-button");
+    const importSubmitBtn = document.getElementById("import-submit-button");
+    const editItemModal = document.getElementById("edit-item-modal");
+    const editItemHeading = document.getElementById("edit-item-heading");
+    const typeSelect = document.getElementById("item-type");
+    const itemCancelButton = document.getElementById("item-cancel-button");
+    const itemSubmitButton = document.getElementById("item-submit-button");
+    const folderMenu = document.getElementById("folder-menu");
+    const editFolderButton = document.getElementById("edit-folder-button");
+    const deleteFolderBtn = document.getElementById("delete-folder-button");
+    const itemMenu = document.getElementById("item-menu");
+    const editItemButton = document.getElementById("edit-item-button");
+    const deleteItemButton = document.getElementById("delete-item-button");
 
     let folderStack = [];
     let currentFolderId = null;
@@ -46,25 +46,25 @@ document.addEventListener("DOMContentLoaded", () => {
     document.addEventListener("click", (e) => { 
         if (!controlHomeModal.contains(e.target) && !controlHomeModal.classList.contains("hidden")) {
             controlHomeModal.classList.add("hidden");
-        } else if (!controlFolderModal.contains(e.target) && !controlFolderModal.classList.contains("hidden")) {
-            controlFolderModal.classList.add("hidden");
+        } else if (!folderMenu.contains(e.target) && !folderMenu.classList.contains("hidden")) {
+            folderMenu.classList.add("hidden");
         }
     });
     homeEllipsis.addEventListener("click", (e) => {
         e.stopPropagation();
         controlHomeModal.classList.remove("hidden");
     })
-    addGridBtn.addEventListener ("click", () => {
-        editGenreModal.classList.remove("hidden");
+    addRootFolderButton.addEventListener ("click", () => {
+        editFolderModal.classList.remove("hidden");
     });
-    addSubGridBtn.addEventListener ("click", () => {
-        editGenreModal.classList.remove("hidden");
+    addChildFolderButton.addEventListener ("click", () => {
+        editFolderModal.classList.remove("hidden");
     });
-    genreCancelBtn.addEventListener("click", () => {
-        editGenreModal.classList.add("hidden");
+    folderCancelButton.addEventListener("click", () => {
+        editFolderModal.classList.add("hidden");
     });
-    genreSubmitBtn.addEventListener("click", handleParentSubmit);
-    typeSelect.addEventListener("change", updateDetailForm);
+    folderSubmitButton.addEventListener("click", handleFolderSubmit);
+    typeSelect.addEventListener("change", updateItemForm);
     overallMemo.addEventListener("input", () => {
         clearTimeout(memoSaveTimer);
 
@@ -72,33 +72,33 @@ document.addEventListener("DOMContentLoaded", () => {
             saveOverallMemo();
         }, 500);
     });
-    closeDetailBtn.addEventListener("click", goBack);
-    addItemBtn.addEventListener("click", () => {
-        editDetailType.innerText = "Create New Detail";
-        detailSubmitBtn.innerText = "Create";
-        editDetailModal.classList.remove("hidden");
-        updateDetailForm();
+    backButton.addEventListener("click", goBack);
+    addItemButton.addEventListener("click", () => {
+        editItemHeading.innerText = "Create New Item";
+        itemSubmitButton.innerText = "Create";
+        editItemModal.classList.remove("hidden");
+        updateItemForm();
     });
-    detailEllipsis.addEventListener("click", (e) => {
+    folderMenuButton.addEventListener("click", (e) => {
         e.stopPropagation();
         openControlFolderModal()
     });
-    editFolderBtn.addEventListener("click", (e) => {
+    editFolderButton.addEventListener("click", (e) => {
         e.stopPropagation();
         openEditFolderModal();
     });
     deleteFolderBtn.addEventListener("click", deleteFolder);
-    entryList.addEventListener("click", openControlDetailModal);
-    detailCancelBtn.addEventListener("click", () => {
-        editDetailModal.classList.add("hidden");
-        document.getElementById("detail-type").value = "link";
-        document.getElementById("detail-source").value = "";
-        document.getElementById("detail-title").value = "";
-        document.getElementById("detail-date").value = "";
-        document.getElementById("detail-memo").value = "";
+    itemList.addEventListener("click", openControlItemModal);
+    itemCancelButton.addEventListener("click", () => {
+        editItemModal.classList.add("hidden");
+        document.getElementById("item-type").value = "link";
+        document.getElementById("item-source").value = "";
+        document.getElementById("item-title").value = "";
+        document.getElementById("item-date").value = "";
+        document.getElementById("item-memo").value = "";
         editingItemId = null;
     });
-    detailSubmitBtn.addEventListener("click", handleDetailSubmit);
+    itemSubmitButton.addEventListener("click", handleItemSubmit);
     importBtn.addEventListener("click", () => {
         controlHomeModal.classList.add("hidden");
         importFileModal.classList.remove("hidden");
@@ -108,8 +108,8 @@ document.addEventListener("DOMContentLoaded", () => {
     })
     importSubmitBtn.addEventListener("click", importData);
     exportBtn.addEventListener("click", exportData);
-    editDetailBtn.addEventListener("click", openEditDetailModal);
-    deleteDetailBtn.addEventListener("click", deleteDetail);
+    editItemButton.addEventListener("click", openEditItemModal);
+    deleteItemButton.addEventListener("click", deleteItem);
 
     async function renderOverall(folderId) {
 		try {
@@ -119,9 +119,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 const tempWrapper = document.createElement("div");
 				renderFolders(folders, tempWrapper);
 
-                replaceList(rootGenreWrapper, tempWrapper, ".genre-grid:not(#add-grid, #add-subgrid)",addGridBtn);
-				genreListSection.classList.remove("hidden");
-				detailSection.classList.add("hidden");
+                replaceList(rootFolderWrapper, tempWrapper, ".folder-grid:not(#add-root-folder, #add-child-folder)",addRootFolderButton);
+				folderListSection.classList.remove("hidden");
+				folderContentSection.classList.add("hidden");
                 currentFolderId = null;
 				return true;
 			}
@@ -134,14 +134,14 @@ document.addEventListener("DOMContentLoaded", () => {
 			renderFolders(folders, tempFolderWrapper);
 			renderItems(items,tempItemWrapper);
 
-            replaceList(subGenreWrapper,tempFolderWrapper,".genre-grid:not(#add-grid, #add-subgrid)",addSubGridBtn);
-            replaceList(entryList,tempItemWrapper,".entry-item:not(#add-item)",addItemBtn);
+            replaceList(childFolderWrapper,tempFolderWrapper,".folder-grid:not(#add-root-folder, #add-child-folder)",addChildFolderButton);
+            replaceList(itemList,tempItemWrapper,".item-card:not(#add-item)",addItemButton);
 
-			genreTitle.innerText = currentFolder.name;
+			folderTitle.innerText = currentFolder.name;
 			overallMemo.value = currentFolder.overall_memo || "";
 
-			genreListSection.classList.add("hidden");
-			detailSection.classList.remove("hidden");
+			folderListSection.classList.add("hidden");
+			folderContentSection.classList.remove("hidden");
 
             currentFolderId = folderId;
             return true;
@@ -155,7 +155,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function renderFolders(folders, wrapper) {
         folders.forEach(folder => {
             const div = document.createElement("div");
-            div.className = "genre-grid sweep-hover";
+            div.className = "folder-grid sweep-hover";
             div.dataset.nodeId = folder.id;
 
             div.innerHTML = `
@@ -178,13 +178,13 @@ document.addEventListener("DOMContentLoaded", () => {
     function renderItems(items, wrapper) {
         items.forEach(item => {
             const li = document.createElement("li");
-            li.className = "entry-item";
-            li.dataset.detailId = item.id;
+            li.className = "item-card";
+            li.dataset.itemId = item.id;
 
             if(item.type === "youtube") {
                 li.innerHTML = `
                     <iframe 
-                        class="entry-thumbnail" 
+                        class="item-thumbnail" 
                         width="367" 
                         height="207" 
                         src="https://www.youtube.com/embed/${item.source}" 
@@ -193,44 +193,44 @@ document.addEventListener("DOMContentLoaded", () => {
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                         allowfullscreen
                     ></iframe>
-                    <div class="entry-info">
+                    <div class="item-info">
                         <a
                             href="https://www.youtube.com/watch?v=${item.source}"
                             target="_blank"
-                            class="entry-title"
+                            class="item-title"
                         >${item.title}</a>
                     </div>
-                    <p class="entry-date">${item.date}</p>
-                    <p class="entry-memo">Memo</p>
-                    <div class="entry-ellipsis"><i class="fa-solid fa-ellipsis-vertical"></i></div>
+                    <p class="item-date">${item.date}</p>
+                    <p class="item-memo">Memo</p>
+                    <div class="item-menu"><i class="fa-solid fa-ellipsis-vertical"></i></div>
                 `;
             } else if (item.type === "link") {
                 li.innerHTML = `
                     <div class="favicon">
                         <img src="https://www.google.com/s2/favicons?domain=${item.source}">
                     </div>
-                    <div class="entry-info">
+                    <div class="item-info">
                         <a 
                             href="${item.source}" 
                             target="_blank" 
-                            class="entry-title"
+                            class="item-title"
                         >${item.title}</a>
                     </div>
-                    <p class="entry-date">${item.date}</p>
-                    <p class="entry-memo">Memo</p>
-                    <div class="entry-ellipsis"><i class="fa-solid fa-ellipsis-vertical"></i></div>
+                    <p class="item-date">${item.date}</p>
+                    <p class="item-memo">Memo</p>
+                    <div class="item-menu"><i class="fa-solid fa-ellipsis-vertical"></i></div>
                 `;
             } else if (item.type === "book") {
                 li.innerHTML = `
                     <div class="book-icon">
                         <i class="fa-solid fa-book"></i>
                     </div>
-                    <div class="entry-info">
-                        <p class="entry-title">${item.title}</p>
+                    <div class="item-info">
+                        <p class="item-title">${item.title}</p>
                     </div>
-                    <p class="entry-date">${item.date}</p>
-                    <p class="entry-memo">Memo</p>
-                    <div class="entry-ellipsis"><i class="fa-solid fa-ellipsis-vertical"></i></div>
+                    <p class="item-date">${item.date}</p>
+                    <p class="item-memo">Memo</p>
+                    <div class="item-menu"><i class="fa-solid fa-ellipsis-vertical"></i></div>
                 `;
             }
 
@@ -248,14 +248,14 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    async function handleParentSubmit(e) {
+    async function handleFolderSubmit(e) {
         e.preventDefault();
 
-        const name = document.getElementById("genre-name").value.trim();
+        const name = document.getElementById("folder-name").value.trim();
         const date = document.getElementById("date").value || getTodayString();
 
         if (!name) {
-            alert("Please fill in genre name");
+            alert("Please fill in a folder name");
             return;
         }
 
@@ -276,22 +276,22 @@ document.addEventListener("DOMContentLoaded", () => {
 			return;
 		}
         
-        editGenreModal.classList.add("hidden");
-        document.getElementById("genre-name").value = "";
+        editFolderModal.classList.add("hidden");
+        document.getElementById("folder-name").value = "";
         document.getElementById("date").value = "";
 
         await renderOverall(currentFolderId);
     }
 
-    async function handleDetailSubmit(e) {
+    async function handleItemSubmit(e) {
         e.preventDefault();
 
-        const type = document.getElementById("detail-type").value;
-        const source = document.getElementById("detail-source").value;
-        const isbn = document.getElementById("detail-isbn").value || null;
-        const title = document.getElementById("detail-title").value;
-        const date = document.getElementById("detail-date").value || getTodayString();
-        const memo = document.getElementById("detail-memo").value || null;
+        const type = document.getElementById("item-type").value;
+        const source = document.getElementById("item-source").value;
+        const isbn = document.getElementById("item-isbn").value || null;
+        const title = document.getElementById("item-title").value;
+        const date = document.getElementById("item-date").value || getTodayString();
+        const memo = document.getElementById("item-memo").value || null;
 
         const item = {
             type: type,
@@ -315,21 +315,21 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 
 		editingItemId = null;
-        editDetailModal.classList.add("hidden");
+        editItemModal.classList.add("hidden");
 
-        document.getElementById("detail-type").value = "link";
-        document.getElementById("detail-source").value = "";
-        document.getElementById("detail-isbn").value = "";
-        document.getElementById("detail-title").value = "";
-        document.getElementById("detail-date").value = "";
-        document.getElementById("detail-memo").value = "";
+        document.getElementById("item-type").value = "link";
+        document.getElementById("item-source").value = "";
+        document.getElementById("item-isbn").value = "";
+        document.getElementById("item-title").value = "";
+        document.getElementById("item-date").value = "";
+        document.getElementById("item-memo").value = "";
 
         await renderOverall(currentFolderId);
     }
 
-    function updateDetailForm() {
+    function updateItemForm() {
         const selectedType = typeSelect.value;
-        const typeBlocks = document.querySelectorAll("#detail-form [data-type]");
+        const typeBlocks = document.querySelectorAll("#item-form [data-type]");
 
         typeBlocks.forEach(block => {
             const types = block.dataset.type.split(" ");
@@ -364,14 +364,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     	    if (!folder) return;
 
-        	editGenreType.innerText = "Edit Folder";
-    	    genreSubmitBtn.innerText = "Edit";
+        	editFolderHeading.innerText = "Edit Folder";
+    	    folderSubmitButton.innerText = "Edit";
 
-        	document.getElementById("genre-name").value = folder.name;
+        	document.getElementById("folder-name").value = folder.name;
 	        document.getElementById("date").value = folder.date;
 
-    	    editGenreModal.classList.remove("hidden");
-        	controlFolderModal.classList.add("hidden");
+    	    editFolderModal.classList.remove("hidden");
+        	folderMenu.classList.add("hidden");
 		} catch (error) {
 			console.error("Failed to render folder:", error);
 			alert("Failed to load folder data. Please try again.");
@@ -440,7 +440,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (editingFolderId === null) return;
 
         const confirmed = confirm(
-            "Are you sure you want to delete this folder? All subfolders and details will be deleted."
+            "Are you sure you want to delete this folder? All subfolders and items will be deleted."
         );
         if (!confirmed) return;
 
@@ -461,7 +461,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			console.log("delete successfully:", result);
 
 			editingFolderId = null;
-			controlFolderModal.classList.add("hidden");
+			folderMenu.classList.add("hidden");
 			await goBack({ saveMemo: false });
 		} catch (error) {
 			console.error("Failed to delete folder:", error);
@@ -470,7 +470,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
     }
 
-    async function openEditDetailModal() {
+    async function openEditItemModal() {
 		try {
 			if (editingItemId === null) return;
 
@@ -485,32 +485,32 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	        const item = await response.json();
 
-    	    editDetailType.innerText = "Edit Detail";
-        	detailSubmitBtn.innerText = "Edit";
+    	    editItemHeading.innerText = "Edit Item";
+        	itemSubmitButton.innerText = "Edit";
 
-	        document.getElementById("detail-type").value = item.type;
+	        document.getElementById("item-type").value = item.type;
 
-    	    document.getElementById("detail-source").value =
+    	    document.getElementById("item-source").value =
         	    item.type === "youtube"
             	    ? `https://www.youtube.com/watch?v=${item.source}`
                 	: item.source ?? "";
 
-	        document.getElementById("detail-isbn").value = item.isbn ?? "";
-    	    document.getElementById("detail-title").value = item.title;
-        	document.getElementById("detail-date").value = item.date;
-	        document.getElementById("detail-memo").value = item.memo ?? "";
+	        document.getElementById("item-isbn").value = item.isbn ?? "";
+    	    document.getElementById("item-title").value = item.title;
+        	document.getElementById("item-date").value = item.date;
+	        document.getElementById("item-memo").value = item.memo ?? "";
 
-    	    updateDetailForm();
+    	    updateItemForm();
 
-	        editDetailModal.classList.remove("hidden");
-    	    controlDetailModal.classList.add("hidden");
+	        editItemModal.classList.remove("hidden");
+    	    itemMenu.classList.add("hidden");
 		} catch (error) {
 			console.error("Failed to open detail edit modal", error);
 			alert("Failed to open detail edit modal. Please try again.");
 		}
     }
 
-    async function deleteDetail() {
+    async function deleteItem() {
         if (editingItemId === null) return;
 
         const confirmed = confirm(
@@ -536,7 +536,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	        console.log("delete item successfully:", result);
 
     	    editingItemId = null;
-        	controlDetailModal.classList.add("hidden");
+        	itemMenu.classList.add("hidden");
     
 	        await renderOverall(currentFolderId);
 		} catch (error) {
@@ -548,27 +548,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function openControlFolderModal() {
         editingFolderId = currentFolderId;
-        controlFolderModal.classList.remove("hidden");
+        folderMenu.classList.remove("hidden");
     }
 
-    function openControlDetailModal(e) {
-        const ellipsis = e.target.closest(".entry-ellipsis");
+    function openControlItemModal(e) {
+        const ellipsis = e.target.closest(".item-menu");
 
         if (!ellipsis) {
-            controlDetailModal.classList.add("hidden");
+            itemMenu.classList.add("hidden");
             return;
         }
 
-        const item = ellipsis.closest(".entry-item");
-        const detailId = Number(item.dataset.detailId);
-        editingItemId = detailId;
+        const item = ellipsis.closest(".item-card");
+        const itemId = Number(item.dataset.itemId);
+        editingItemId = itemId;
         
         const rect = ellipsis.getBoundingClientRect();
 
-        controlDetailModal.style.position = "absolute";
-        controlDetailModal.style.top = `${rect.bottom + window.scrollY}px`;
-        controlDetailModal.style.left = `${rect.left + window.scrollX - 20}px`;
-        controlDetailModal.classList.remove("hidden");
+        itemMenu.style.position = "absolute";
+        itemMenu.style.top = `${rect.bottom + window.scrollY}px`;
+        itemMenu.style.left = `${rect.left + window.scrollX - 20}px`;
+        itemMenu.classList.remove("hidden");
     }
 
     async function loadRootFolders() {

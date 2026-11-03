@@ -56,7 +56,7 @@ body {
     background-color: rgb(var(--colour1-background));
 }
 
-#genre-list h1 {
+#folder-list-section h1 {
     text-align: center;
     margin: 30px 0 50px 0;
     font-size: 35px;
@@ -71,24 +71,24 @@ body {
     background-color: transparent;
 }
 
-#genre-list .wrapper, #genre-detail main .wrapper {
+#folder-list-section .wrapper, #folder-content-section main .wrapper {
     display: flex;
     gap: 10px;
 }
 
-#genre-list .wrapper {
+#folder-list-section .wrapper {
     flex-wrap: wrap;
     justify-content: center;
     margin: 20px;
 }
 
-#genre-detail main .wrapper {
+#folder-content-section main .wrapper {
     padding: 2px 17px 10px 17px;
     margin: 5px 0;
     overflow-x: scroll;
 }
 
-.genre-grid {
+.folder-grid {
     position: relative;
     border: 1px solid rgb(var(--colour1-text));
     border-radius: 3px;
@@ -100,12 +100,12 @@ body {
     overflow: hidden;
 }
 
-#add-grid, #add-subgrid {
+#add-root-folder, #add-child-folder {
     position: relative;
     border: 1.5px dashed rgba(var(--colour1-text), 0.3);
 }
 
-#add-grid i, #add-subgrid i {
+#add-root-folder i, #add-child-folder i {
     position: absolute;
     inset: 0;
     margin: auto;
@@ -115,7 +115,7 @@ body {
     color: rgba(var(--colour1-text), 0.7);
 }
 
-#genre-detail {
+#folder-content-section {
     position: fixed;
     inset: 0;
     background-color: rgb(var(--colour1-background));
@@ -123,31 +123,31 @@ body {
     height: calc(80vh - 10px);
 }
 
-.detail-header {
+.folder-header {
     display: flex;
     justify-content: space-between;
 }
 
-#close-detail-btn {
+#back-button {
     font-size: 33px;
     padding-left: 20px;
     border: none;
     background-color: transparent;
 }
 
-#detail-ellipsis {
+#folder-menu-button {
     font-size: 33px;
     padding-right: 30px;
     border: none;
     background-color: transparent;
 }
 
-#genre-detail main {
+#folder-content-section main {
     height: calc(80vh - 100px);
     overflow-y: scroll;
 }
 
-.entry-list {
+.item-list {
     display: flex;
     flex-direction: row;
     margin: 2px 0;
@@ -155,7 +155,7 @@ body {
     overflow-x: scroll;
 }
 
-.entry-item {
+.item-card {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     grid-template-rows: repeat(6, 1fr);
@@ -169,7 +169,7 @@ body {
     margin: 0 3px;
 }
 
-.entry-thumbnail {
+.item-thumbnail {
     grid-area: 1 / 1 / 4 / 9;
 }
 
@@ -190,17 +190,17 @@ body {
     font-size: 30px;
 }
 
-.entry-info {
+.item-info {
     grid-area: 4 / 2 / 6 / 7;
     margin: auto;
 }
 
-.entry-date {
+.item-date {
     grid-area: 6 / 5 / 7 / 8;
     text-align: center;
 }
 
-.entry-memo {
+.item-memo {
     grid-area: 6 / 1 / 7 / 5;
     background-color: rgba(var(--colour1-accent), 0.05);
     padding: 10px;
@@ -208,7 +208,7 @@ body {
     overflow-y: auto;
 }
 
-.entry-ellipsis {
+.item-menu {
     grid-area: 4 / 7 / 5 / 9;
     padding: 10px 15px;
     margin: 10px;
@@ -245,7 +245,7 @@ body {
     background-color: rgb(255, 255, 255);
 }
 
-#control-home-modal, #control-folder-modal, #control-detail-modal {
+#control-home-modal, #folder-menu, #item-menu {
     background-color: rgb(var(--colour1-background));
     box-shadow: 1px 1px 10px grey;
     border-radius: 3px;
@@ -254,22 +254,22 @@ body {
     z-index: 100;
 }
 
-#control-home-modal, #control-folder-modal {
+#control-home-modal, #folder-menu {
     position: absolute;
     right: 30px;
     top: 80px;
 }
 
-#control-home-modal p, #control-folder-modal p, #control-detail-modal p {
+#control-home-modal p, #folder-menu p, #item-menu p {
     padding: 10px;
     margin: 0;
 }
 
-#control-home-modal p:hover, #control-folder-modal p:hover, #control-detail-modal p:hover {
+#control-home-modal p:hover, #folder-menu p:hover, #item-menu p:hover {
     background-color: rgba(var(--colour1-accent), 0.05);
 }
 
-#import-file-wrapper, #edit-genre, #edit-detail {
+#import-file-wrapper, #edit-folder-container, #edit-item-container {
     margin: 70px auto;
     width: 400px;
     background-color: rgb(var(--colour1-background));
@@ -277,22 +277,22 @@ body {
     padding: 10px;
 }
 
-#import-file-wrapper h2, #edit-genre h2, #edit-detail h2 {
+#import-file-wrapper h2, #edit-folder-container h2, #edit-item-container h2 {
     margin: 10px 0 10px 10px;
 }
 
-#import-form, #genre-form, #detail-form {
+#import-form, #folder-form, #item-form {
     display: flex;
     flex-direction: column;
     margin: 0 15px;
 }
 
-#genre-form label, #detail-form label {
+#folder-form label, #item-form label {
     font-size: 16px;
     padding: 5px 0;
 }
 
-#import-form input, #genre-form input, #detail-form input, #detail-form select {
+#import-form input, #folder-form input, #item-form input, #item-form select {
     height: 45px;
     width: 100%;
     padding: 5px 10px;
@@ -300,17 +300,17 @@ body {
     font-size: 22px;
 }
 
-#detail-form textarea {
+#item-form textarea {
     height: 80px;
     width: 100%;
 }
 
-#import-btn-wrapper, #genre-btn, #detail-btn {
+#import-button-wrapper, #folder-form-button, #item-form-button {
     text-align: right;
     margin: 20px 15px 10px 0;
 }
 
-#import-cancel-btn, #genre-cancel-btn, #detail-cancel-btn {
+#import-cancel-button, #folder-cancel-button, #item-cancel-button {
     background-color: transparent;
     border: none;
     font-size: 18px;
@@ -320,11 +320,11 @@ body {
     padding: 8px 15px;
 }
 
-#import-cancel-btn:hover, #genre-cancel-btn:hover, #detail-cancel-btn:hover {
+#import-cancel-button:hover, #folder-cancel-button:hover, #item-cancel-button:hover {
     background-color: rgba(0,0,0,0.2);
 }
 
-#import-submit-btn, #genre-submit-btn, #detail-submit-btn {
+#import-submit-button, #folder-submit-button, #item-submit-button {
     background-color: rgb(var(--colour1-accent));
     color: rgb(var(--colour1-accent-text));
     border: 1px solid transparent;
@@ -334,7 +334,7 @@ body {
     box-shadow: 1px 1px 3px grey;
 }
 
-#import-submit-btn:hover, #genre-submit-btn:hover, #detail-submit-btn:hover {
+#import-submit-button:hover, #folder-submit-button:hover, #item-submit-button:hover {
     border: 1px solid rgb(var(--colour1-background));
     box-shadow: none;
 }
