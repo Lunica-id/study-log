@@ -1,112 +1,19 @@
 const express = require("express");
 const cors = require("cors");
-const Database = require("better-sqlite3");
 const path = require("path");
-const {z} = require('zod');
+
+const db = require("./db/database");
+const initDatabase = require("./db/init");
+const { folderPostSchema, folderPatchSchema } = require("./validators/folderSchemas");
+const { itemPostSchema, itemPatchSchema } = require("./validators/itemSchemas");
+const { backupSchema } = require("./validators/backupSchemas");
 
 const app = express();
 const PORT = 3003;
 
-const db = new Database(
-    path.join(__dirname, "study-log.db")
-);
-
-const datePattern = /^\d{4}-\d{2}-\d{2}$/;
-const folderPostSchema = z.object({
-    parentId: z.number().nullable(),
-    name: z.string().trim().min(1),
-    date: z.string().regex(datePattern).refine(isValidDate, {
-        message: "Invalid date"
-    }),
-    overallMemo: z.string().nullable().optional()
-});
-const folderPatchSchema = z.object({
-    name: z.string().trim().min(1).optional(),
-    date: z.string().regex(datePattern).refine(isValidDate, {
-        message: "Invalid date"
-    }).optional(),
-    overallMemo: z.string().nullable().optional()
-});
-const itemPostSchema = z.object({
-    folderId: z.number(),
-    type: z.enum(["link","youtube","book","document"]),
-    source: z.string().nullable().optional(),
-    isbn: z.string().nullable().optional(),
-    title: z.string().trim().min(1),
-    date: z.string().regex(datePattern).refine(isValidDate, {
-        message:"Invalid date"
-    }),
-    memo: z.string().nullable().optional()
-});
-const itemPatchSchema = z.object({
-    type: z.enum(["link", "youtube", "book", "document"]),
-    source: z.string().nullable().optional(),
-    isbn: z.string().nullable().optional(),
-    title: z.string().trim().min(1),
-    date: z.string().regex(datePattern).refine(isValidDate, {
-        message: "Invalid date"
-    }),
-    memo: z.string().nullable().optional()
-});
-const backupSchema = z.object({
-    version: z.literal(1),
-    exportedAt: z.string(),
-    folders: z.array(
-        z.object({
-            id: z.number().int().positive(),
-            parent_id: z.number().int().positive().nullable(),
-            name: z.string().min(1),
-            date: z.string().regex(datePattern),
-            overall_memo: z.string().nullable()
-        })
-    ),
-    items: z.array(
-        z.object({
-            id: z.number().int().positive(),
-            folder_id: z.number().int().positive(),
-            type: z.enum(["link", "youtube", "book", "document"]),
-            source: z.string().nullable(),
-            isbn: z.string().nullable(),
-            title: z.string().min(1),
-            date: z.string().regex(datePattern),
-            memo: z.string().nullable()
-        })
-    )
-});
-
-
-db.pragma("foreign_keys = ON"); //sqlite3パッケージの場合コードが異なる
-
-db.exec(`
-    CREATE TABLE IF NOT EXISTS folders (
-        id INTEGER PRIMARY KEY,
-        parent_id INTEGER,
-        name TEXT NOT NULL,
-        date TEXT NOT NULL,
-        overall_memo TEXT,
-
-        FOREIGN KEY(parent_id)
-            REFERENCES folders(id)
-            ON DELETE CASCADE
-    );
-
-    CREATE TABLE IF NOT EXISTS items (
-        id INTEGER PRIMARY KEY,
-        folder_id INTEGER NOT NULL,
-        type TEXT NOT NULL,
-        source TEXT,
-        isbn TEXT,
-        title TEXT NOT NULL,
-        date TEXT NOT NULL,
-        memo TEXT,
-
-        FOREIGN KEY (folder_id)
-            REFERENCES folders(id)
-            ON DELETE CASCADE
-    );
-`)
-
 const frontendPath = path.join(__dirname, "..", "app");
+
+initDatabase(db);
 
 app.use(express.static(frontendPath));
 app.use(cors());
@@ -602,14 +509,3 @@ app.delete("/api/items/:id", (req, res) => {
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
-
-function isValidDate(dateString) {
-    if (!datePattern.test(dateString)) {
-        return false;
-    }
-
-    const [year, month, day] = dateString.split('-').map(Number);
-    const date = new Date(year, month-1, day);
-
-    return (date.getFullYear() === year && date.getMonth() === month-1 && date.getDate() === day);
-}
