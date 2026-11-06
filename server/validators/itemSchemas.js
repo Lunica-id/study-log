@@ -16,10 +16,10 @@ const itemPatchSchema = z.object({
     type: z.enum(["link", "youtube", "book", "document"]),
     source: z.string().nullable().optional(),
     isbn: z.string().nullable().optional(),
-    title: z.string().trim().min(1),
+    title: z.string().trim().min(1).optional(),
     date: z.string().regex(datePattern).refine(isValidDate, {
         message: "Invalid date"
-    }),
+    }).optional(),
     memo: z.string().nullable().optional()
 });
 
