@@ -158,10 +158,12 @@ document.addEventListener("DOMContentLoaded", () => {
             div.className = "folder-grid sweep-hover";
             div.dataset.nodeId = folder.id;
 
-            div.innerHTML = `
-                <h3>${folder.name}</h3>
-                <p>${folder.date}</p>
-            `;
+            const heading = document.createElement("h3");
+            heading.textContent = folder.name;
+            const date = document.createElement("p");
+            date.textContent = folder.date;
+            div.appendChild(heading);
+            div.appendChild(date);
 
             div.addEventListener("click", async() => {
                 const previousFolderId = currentFolderId;
@@ -182,58 +184,87 @@ document.addEventListener("DOMContentLoaded", () => {
             li.dataset.itemId = item.id;
 
             if(item.type === "youtube") {
-                li.innerHTML = `
-                    <iframe 
-                        class="item-thumbnail" 
-                        width="367" 
-                        height="207" 
-                        src="https://www.youtube.com/embed/${item.source}" 
-                        title="YouTube video player" 
-                        frameborder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                        allowfullscreen
-                    ></iframe>
-                    <div class="item-info">
-                        <a
-                            href="https://www.youtube.com/watch?v=${item.source}"
-                            target="_blank"
-                            class="item-title"
-                        >${item.title}</a>
-                    </div>
-                    <p class="item-date">${item.date}</p>
-                    <p class="item-memo">Memo</p>
-                    <div class="item-menu"><i class="fa-solid fa-ellipsis-vertical"></i></div>
-                `;
-            } else if (item.type === "link") {
-                li.innerHTML = `
-                    <div class="favicon">
-                        <img src="https://www.google.com/s2/favicons?domain=${item.source}">
-                    </div>
-                    <div class="item-info">
-                        <a 
-                            href="${item.source}" 
-                            target="_blank" 
-                            class="item-title"
-                        >${item.title}</a>
-                    </div>
-                    <p class="item-date">${item.date}</p>
-                    <p class="item-memo">Memo</p>
-                    <div class="item-menu"><i class="fa-solid fa-ellipsis-vertical"></i></div>
-                `;
-            } else if (item.type === "book") {
-                li.innerHTML = `
-                    <div class="book-icon">
-                        <i class="fa-solid fa-book"></i>
-                    </div>
-                    <div class="item-info">
-                        <p class="item-title">${item.title}</p>
-                    </div>
-                    <p class="item-date">${item.date}</p>
-                    <p class="item-memo">Memo</p>
-                    <div class="item-menu"><i class="fa-solid fa-ellipsis-vertical"></i></div>
-                `;
-            }
+                if (isValidYouTubeId(item.source)) {
+                    const iframe = document.createElement("iframe");
+                    iframe.className = "item-thumbnail";
+                    iframe.width = "367";
+                    iframe.height = "207";
+                    iframe.src = `https://www.youtube.com/embed/${item.source}`;
+                    iframe.title = "YouTube video player";
+                    iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+                    iframe.allowFullScreen = true;
 
+                    const info = document.createElement("div");
+                    info.className = "item-info";
+                    const link = document.createElement("a");
+                    link.href = `https://www.youtube.com/watch?v=${item.source}`;
+                    link.target = "_blank";
+                    link.rel = "noopener noreferrer";
+                    link.className = "item-title";
+                    link.textContent = item.title;
+                    info.appendChild(link);
+                    li.appendChild(iframe);
+                    li.appendChild(info);
+                } else {
+                    const favicon = createDefaultFavicon();
+                    const info = document.createElement("div");
+                    info.className = "item-info"
+                    const title = document.createElement("p");
+                    title.className = "item-title";
+                    title.textContent = item.title;
+                    info.appendChild(title);
+                    li.appendChild(favicon);
+                    li.appendChild(info);
+                }
+            } else if (item.type === "link") {
+                const url = getSafeHttpUrl(item.source);
+                if (url !== null) {
+                    const favicon = getFavicon(url);
+                    const info = document.createElement("div");
+                    info.className = "item-info";
+                    const title = document.createElement("a");
+                    title.href = url.href;
+                    title.target = "_blank";
+                    title.rel = "noopener noreferrer";
+                    title.className = "item-title";
+                    title.textContent = item.title;
+                    info.appendChild(title);
+                    li.appendChild(favicon);
+                    li.appendChild(info);
+                } else {
+                    const favicon = createDefaultFavicon();
+                    const info = document.createElement("div");
+                    info.className = "item-info"
+                    const title = document.createElement("p");
+                    title.textContent = item.title;
+                    info.appendChild(title);
+                    li.appendChild(favicon);
+                    li.appendChild(info);
+                }
+            } else if (item.type === "book") {
+                const icon = createBookIcon();
+                li.appendChild(icon);
+                const info = document.createElement("div");
+                info.className = "item-info";
+                const title = document.createElement("p");
+                title.className = "item-title";
+                title.textContent = item.title;
+                info.appendChild(title);
+                li.appendChild(info);
+            }
+            const date = document.createElement("p");
+            date.className = "item-date";
+            date.textContent = item.date;
+            const memo = document.createElement("p");
+            memo.className = "item-memo";
+            memo.textContent = "Memo";
+            const menu = document.createElement("div");
+            menu.className = "item-menu";
+            menu.innerHTML = `<i class="fa-solid fa-ellipsis-vertical"></i>`;
+
+            li.appendChild(date);
+            li.appendChild(memo);
+            li.appendChild(menu);
             wrapper.appendChild(li);
         })
     }
@@ -711,6 +742,82 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         return null;
+    }
+
+    function getSafeHttpUrl(value) {
+        try {
+            const url = new URL(value);
+            if (url.protocol !== "http:" && url.protocol !== "https:") {
+                return null;
+            }
+            return url;
+        } catch {
+            return null;
+        }
+    }
+
+    function isValidYouTubeId(value) {
+        return /^[a-zA-Z0-9_-]{11}$/.test(value);
+    }
+
+    // function getFavicon(url) {
+    //     const wrapper = document.createElement("div");
+    //     try {
+    //         if (url === null) {
+    //             throw new Error();
+    //         } else if (url === "book") {
+    //             wrapper.className = "book-icon";
+    //             wrapper.innerHTML = `<i class="fa-solid fa-book"></i>`;
+    //         } else {
+    //             wrapper.className = "favicon";
+    //             const img = document.createElement("img");
+    //             img.src = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(url.hostname)}&sz=64`;
+    //             wrapper.appendChild(img);
+    //         }
+    //     } catch (err) {
+    //         wrapper.className = "default-icon";
+    //         wrapper.innerHTML = `<i class="fa-solid fa-earth-americas"></i>`;
+    //     }
+    //     return wrapper;
+    // }
+
+    function createDefaultFavicon() {
+        const wrapper = document.createElement("div");
+        wrapper.className = "favicon";
+
+        const icon = document.createElement("i");
+        icon.className = "fa-solid fa-earth-americas";
+
+        wrapper.appendChild(icon);
+        return wrapper;
+    }
+
+    function createBookIcon() {
+        const wrapper = document.createElement("div");
+        wrapper.className = "book-icon";
+
+        const icon = document.createElement("i");
+        icon.className = "fa-solid fa-book";
+
+        wrapper.appendChild(icon);
+        return wrapper;
+    }
+
+    function getFavicon(url) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "favicon";
+
+        const img = document.createElement("img");
+        img.src = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(url.hostname)}&sz=64`;
+
+        img.addEventListener("error", () => {
+            const fallback = document.createElement("i");
+            fallback.className = "fa-solid fa-earth-americas";
+            wrapper.replaceChildren(fallback);
+        });
+
+        wrapper.appendChild(img);
+        return wrapper;
     }
 
     async function createNewFolder(folder) {
