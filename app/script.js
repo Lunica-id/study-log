@@ -77,7 +77,7 @@ document.addEventListener("DOMContentLoaded", () => {
         editItemHeading.innerText = "Create New Item";
         itemSubmitButton.innerText = "Create";
         editItemModal.classList.remove("hidden");
-        updateItemForm();
+        resetItemForm();
     });
     folderMenuButton.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -91,12 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
     itemList.addEventListener("click", openControlItemModal);
     itemCancelButton.addEventListener("click", () => {
         editItemModal.classList.add("hidden");
-        document.getElementById("item-type").value = "link";
-        document.getElementById("item-source").value = "";
-        document.getElementById("item-title").value = "";
-        document.getElementById("item-date").value = "";
-        document.getElementById("item-memo").value = "";
-        editingItemId = null;
+        resetItemForm();
     });
     itemSubmitButton.addEventListener("click", handleItemSubmit);
     importBtn.addEventListener("click", () => {
@@ -340,12 +335,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
             item.source = youtubeId;
+            item.isbn = null;
         } else if (type === "link") {
             const url = getSafeHttpUrl(source);
             if (url === null) {
                 alert("Invalid URL");
                 return;
             }
+            item.isbn = null;
+            item.source = url.href;
+        } else if (type === "book") {
+            item.source = null;
         }
 
 		let success;
@@ -363,12 +363,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		editingItemId = null;
         editItemModal.classList.add("hidden");
 
-        document.getElementById("item-type").value = "link";
-        document.getElementById("item-source").value = "";
-        document.getElementById("item-isbn").value = "";
-        document.getElementById("item-title").value = "";
-        document.getElementById("item-date").value = "";
-        document.getElementById("item-memo").value = "";
+        resetItemForm();
 
         await renderOverall(currentFolderId);
     }
@@ -751,6 +746,10 @@ document.addEventListener("DOMContentLoaded", () => {
             /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/
         ]
 
+        if (url === null || url === undefined) {
+            return null;
+        }
+
         for (const pattern of regex) {
             const match = url.match(pattern);
             if (match) return match[1];
@@ -901,5 +900,16 @@ document.addEventListener("DOMContentLoaded", () => {
 			console.error("Failed to update item", error);
 			return false;
 		}
+    }
+
+    function resetItemForm() {
+        document.getElementById("item-type").value = "link";
+        document.getElementById("item-source").value = "";
+        document.getElementById("item-isbn").value = "";
+        document.getElementById("item-title").value = "";
+        document.getElementById("item-date").value = "";
+        document.getElementById("item-memo").value = "";
+        editingItemId = null;
+        updateItemForm();
     }
 })

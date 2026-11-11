@@ -25,7 +25,14 @@ function isValidYouTubeId(value) {
 }
 
 function normaliseIsbn(value) {
-    return value.replace(/[-\s]/g, "").toUpperCase();
+    if (value === null || value === undefined) {
+        return null;
+    } else if (value === "") {
+        return null;
+    } else if (typeof(value) === "string") {
+        return value.replace(/[-\s]/g, "").toUpperCase();
+    }
+    return value;
 }
 
 function isValidIsbn(value) {
@@ -33,7 +40,7 @@ function isValidIsbn(value) {
     const digitStr = normalisedValue.split('');
     if (digitStr.length == 10) {
         let sum = 0;
-        for (i=0;i<9;i++) {
+        for (let i=0;i<9;i++) {
             sum += Number(digitStr[i])*(10-i);
         }
         if (digitStr[9] === "X") {
@@ -51,7 +58,7 @@ function isValidIsbn(value) {
         for (let i=0;i<12;i+=2) {
             sum = sum + digits[i] + digits[i+1]*3;
         }
-        if (sum%10 === 10-digits[12]) {
+        if (sum%10 === (10-digits[12])%10) {
             return true;
         }
         return false;
