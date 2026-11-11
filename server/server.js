@@ -9,7 +9,7 @@ const itemRoutes = require("./routes/itemRoutes");
 const backupRoutes = require("./routes/backupRoutes");
 
 const app = express();
-const PORT = 3003;
+const PORT = process.env.PORT || 3003;
 
 const frontendPath = path.join(__dirname, "..", "app");
 

@@ -1,8 +1,12 @@
-reference/
 note.md
 server/node_modules/
-test/
-server/study-log.db
-server/test.db
+*.db
 server/test-server.js
 jsconfig.json
+
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+Thumbs.db
