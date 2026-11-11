@@ -318,7 +318,7 @@ document.addEventListener("DOMContentLoaded", () => {
         e.preventDefault();
 
         const type = document.getElementById("item-type").value;
-        const source = document.getElementById("item-source").value;
+        const source = document.getElementById("item-source").value || null;
         const isbn = document.getElementById("item-isbn").value || null;
         const title = document.getElementById("item-title").value;
         const date = document.getElementById("item-date").value || getTodayString();
@@ -326,12 +326,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const item = {
             type: type,
-            source: extractYouTubeId(source) ?? source,
+            source: source,
             isbn: isbn,
             title: title,
             date: date,
             memo: memo
         };
+
+        if (type === "youtube") {
+            const youtubeId = extractYouTubeId(source);
+            if (!youtubeId || !isValidYouTubeId(youtubeId)) {
+                alert("Invalid YouTube URL");
+                return;
+            }
+            item.source = youtubeId;
+        } else if (type === "link") {
+            const url = getSafeHttpUrl(source);
+            if (url === null) {
+                alert("Invalid URL");
+                return;
+            }
+        }
 
 		let success;
         if (editingItemId !== null) {
@@ -759,27 +774,6 @@ document.addEventListener("DOMContentLoaded", () => {
     function isValidYouTubeId(value) {
         return /^[a-zA-Z0-9_-]{11}$/.test(value);
     }
-
-    // function getFavicon(url) {
-    //     const wrapper = document.createElement("div");
-    //     try {
-    //         if (url === null) {
-    //             throw new Error();
-    //         } else if (url === "book") {
-    //             wrapper.className = "book-icon";
-    //             wrapper.innerHTML = `<i class="fa-solid fa-book"></i>`;
-    //         } else {
-    //             wrapper.className = "favicon";
-    //             const img = document.createElement("img");
-    //             img.src = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(url.hostname)}&sz=64`;
-    //             wrapper.appendChild(img);
-    //         }
-    //     } catch (err) {
-    //         wrapper.className = "default-icon";
-    //         wrapper.innerHTML = `<i class="fa-solid fa-earth-americas"></i>`;
-    //     }
-    //     return wrapper;
-    // }
 
     function createDefaultFavicon() {
         const wrapper = document.createElement("div");

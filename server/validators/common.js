@@ -11,7 +11,60 @@ function isValidDate(dateString) {
     return (date.getFullYear() === year && date.getMonth() === month-1 && date.getDate() === day);
 }
 
+function isValidHttpUrl(value) {
+    try {
+        const url = new URL(value);
+        return url.protocol === "http:" || url.protocol === "https:";
+    } catch {
+        return false;
+    }
+}
+
+function isValidYouTubeId(value) {
+    return /^[a-zA-Z0-9_-]{11}$/.test(value);
+}
+
+function normaliseIsbn(value) {
+    return value.replace(/[-\s]/g, "").toUpperCase();
+}
+
+function isValidIsbn(value) {
+    const normalisedValue = normaliseIsbn(value);
+    const digitStr = normalisedValue.split('');
+    if (digitStr.length == 10) {
+        let sum = 0;
+        for (i=0;i<9;i++) {
+            sum += Number(digitStr[i])*(10-i);
+        }
+        if (digitStr[9] === "X") {
+            sum += 10;
+        } else {
+            sum += Number(digitStr[9]);
+        }
+        if (sum%11 === 0) {
+            return true;
+        }
+        return false;
+    } else if (digitStr.length == 13) {
+        const digits = digitStr.map(Number);
+        let sum = 0;
+        for (let i=0;i<12;i+=2) {
+            sum = sum + digits[i] + digits[i+1]*3;
+        }
+        if (sum%10 === 10-digits[12]) {
+            return true;
+        }
+        return false;
+    } else {
+        return false;
+    }
+}
+
 module.exports = {
     datePattern, 
-    isValidDate
+    isValidDate,
+    isValidHttpUrl,
+    isValidYouTubeId,
+    normaliseIsbn,
+    isValidIsbn
 };
