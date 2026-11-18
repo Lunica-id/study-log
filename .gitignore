@@ -1,7 +1,9 @@
 note.md
+temp
 server/node_modules/
 *.db
 server/test-server.js
+server/db/seed.js
 jsconfig.json
 
 .env

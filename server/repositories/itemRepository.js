@@ -1,18 +1,30 @@
 const db = require("../db/database");
 
-function getItemById(itemId) {
+function getItemById(itemId, userId) {
     return db
-        .prepare(`SELECT * FROM items WHERE id = ?`)
-        .get(itemId);
+        .prepare(`
+            SELECT items.* 
+            FROM items 
+            JOIN folders
+                ON items.folder_id = folders.id
+            WHERE items.id = ?
+            AND folders.user_id = ?
+        `).get(itemId, userId);
 }
 
-function getItemByFolderId(folderId) {
+function getItemByFolderId(folderId, userId) {
     return db
-        .prepare(`SELECT * FROM items WHERE folder_id = ?`)
-        .all(folderId);
+        .prepare(`
+            SELECT items.* 
+            FROM items 
+            JOIN folders
+                ON items.folder_id = folders.id
+            WHERE items.folder_id = ?
+            AND folders.user_id = ?
+        `).all(folderId, userId);
 }
 
-function createItem(itemData) {
+function createItem(itemData, userId) {
     const {
         folderId,
         type,
@@ -22,6 +34,15 @@ function createItem(itemData) {
         date,
         memo
     } = itemData;
+    const folder = db.prepare(`
+        SELECT id
+        FROM folders
+        WHERE id = ?
+        AND user_id = ?
+    `).get(folderId, userId);
+    if (!folder) {
+        throw new Error("Invalid folder");
+    }
     const dbResult = db.prepare(`
         INSERT INTO items (
             folder_id,
@@ -45,7 +66,7 @@ function createItem(itemData) {
     return Number(dbResult.lastInsertRowid);
 }
 
-function updateItem(itemId, itemData) {
+function updateItem(itemId, itemData, userId) {
     const updates = [];
     const values = [];
     const {
@@ -56,7 +77,17 @@ function updateItem(itemId, itemData) {
         date,
         memo
     } = itemData;
-
+    const parentFolder = db.prepare(`
+        SELECT items.id
+        FROM items 
+        JOIN folders
+            ON items.folder_id = folders.id
+        WHERE items.id = ?
+        AND folders.user_id = ?
+    `).get(itemId, userId);
+    if (!parentFolder) {
+        throw new Error("Invalid parent folder");
+    }
     if (type !== undefined) {
         updates.push("type = ?");
         values.push(type);
@@ -90,14 +121,26 @@ function updateItem(itemId, itemData) {
         UPDATE items
         SET ${updates.join(", ")}
         WHERE id = ?
-    `).run(...values, itemId);
+        AND EXISTS (
+            SELECT 1
+            FROM folders
+            WHERE folders.id = items.folder_id
+            AND folders.user_id = ?
+        )
+    `).run(...values, itemId, userId);
 }
 
-function deleteItem(itemId) {
+function deleteItem(itemId, userId) {
     return db.prepare(`
         DELETE FROM items
         WHERE id = ?
-    `).run(itemId);
+        AND EXISTS (
+            SELECT 1
+            FROM folders
+            WHERE folders.id = items.folder_id
+            AND folders.user_id = ?
+        )
+    `).run(itemId, userId);
 }
 
 module.exports = {

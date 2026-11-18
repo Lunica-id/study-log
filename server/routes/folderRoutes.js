@@ -8,19 +8,21 @@ const {
     folderPatchSchema
 } = require("../validators/folderSchemas");
 
+const userId = 1;
+
 router.get("/",(req,res) => {
-    const folders = folderRepository.getAllFolders();
+    const folders = folderRepository.getAllFolders(userId);
     res.json(folders);
 })
 
 router.get("/root",(req,res) => {
-    const folders = folderRepository.getRootFolders();
+    const folders = folderRepository.getRootFolders(userId);
     res.json(folders);
 })
 
 router.get("/:id",(req,res) => {
     const folderId = Number(req.params.id);
-    const folder = folderRepository.getFolderById(folderId);
+    const folder = folderRepository.getFolderById(folderId, userId);
 
     if(!folder) {
         return res.status(404).json({
@@ -32,7 +34,7 @@ router.get("/:id",(req,res) => {
 
 router.get("/:id/children",(req,res) => {
     const folderId = Number(req.params.id);
-    const folders = folderRepository.getChildFolders(folderId);
+    const folders = folderRepository.getChildFolders(folderId, userId);
     res.json(folders);
 })
 
@@ -47,7 +49,7 @@ router.post("/",(req,res) => {
     }
 
     try {
-        const newFolderId = folderRepository.createFolder(result.data)
+        const newFolderId = folderRepository.createFolder(result.data, userId)
 
         res.status(201).json({
             message: "Folder created",
@@ -75,7 +77,7 @@ router.patch("/:id", (req,res) => {
     }
 
     try {
-        const dbResult = folderRepository.updateFolder(folderId, result.data);
+        const dbResult = folderRepository.updateFolder(folderId, result.data, userId);
 
         if(dbResult == null) {
             return res.status(400).json({
@@ -104,7 +106,7 @@ router.patch("/:id", (req,res) => {
 router.delete("/:id", (req,res) => {
     const folderId = Number(req.params.id);
     try {
-        const result = folderRepository.deleteFolder(folderId);
+        const result = folderRepository.deleteFolder(folderId, userId);
         if (result.changes === 0) {
             return res.status(404).json({
                 error: "Folder not found"

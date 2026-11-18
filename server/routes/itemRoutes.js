@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const itemRepository = require("../repositories/itemRepository");
+const userId = 1;
 
 const {
     itemPostSchema,
@@ -10,13 +11,13 @@ const {
 
 router.get("/:id", (req, res) => {
     const itemId = Number(req.params.id);
-    const items = itemRepository.getItemById(itemId);
+    const items = itemRepository.getItemById(itemId, userId);
     res.json(items);
 })
 
 router.get("/:id/children", (req, res) => {
     const folderId = Number(req.params.id);
-    const items = itemRepository.getItemByFolderId(folderId);
+    const items = itemRepository.getItemByFolderId(folderId, userId);
     res.json(items);
 })
 
@@ -30,7 +31,7 @@ router.post("/", (req,res) => {
     }
 
     try {
-        const newItemId = itemRepository.createItem(result.data);
+        const newItemId = itemRepository.createItem(result.data, userId);
         res.status(201).json({
             message: "Item created",
             id: newItemId
@@ -55,14 +56,14 @@ router.patch("/:id", (req,res) => {
     }
 
     try {
-        const dbResult = itemRepository.updateItem(itemId,result.data);
+        const dbResult = itemRepository.updateItem(itemId,result.data,userId);
         
         if (dbResult == null) {
             return res.status(400).json({
                 error: "No fields to update"
             });
         }
-        if(dbResult.change === 0) {
+        if(dbResult.changes === 0) {
             return res.status(404).json({
                 error: "Item not found"
             });
@@ -82,7 +83,7 @@ router.delete("/:id", (req,res) => {
     const itemId = Number(req.params.id);
 
     try {
-        const result = itemRepository.deleteItem(itemId);
+        const result = itemRepository.deleteItem(itemId, userId);
         if(result.changes == 0) {
             return res.status(404).json({
                 error: "Item not found"
