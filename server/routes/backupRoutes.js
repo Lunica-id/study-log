@@ -4,8 +4,10 @@ const router = express.Router();
 const backupRepository = require("../repositories/backupRepository");
 const { backupSchema } = require("../validators/backupSchemas");
 
+const userId = 1;
+
 router.get("/", (req,res) => {
-    const backupData = backupRepository.getBackupData();
+    const backupData = backupRepository.getBackupData(userId);
     res.json({
         version: 1,
         exportedAt: new Date().toISOString(),
@@ -60,7 +62,7 @@ router.post("/", (req,res) => {
     }
 
     try {
-        backupRepository.importBackup(result.data);
+        backupRepository.importBackup(result.data, userId);
 
         return res.json({
             message: "Backup imported successfully"
